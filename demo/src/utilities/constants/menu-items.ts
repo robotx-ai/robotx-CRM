@@ -29,16 +29,12 @@ export async function getMenus(locale: string) {
         collapsible: true,
         children: [
           {
-            path: `${base}/dashboards/listing`,
-            label: 'Product Dashboard',
+            path: `${base}/productcenter/machine-product-library`,
+            label: 'Machine Product Library',
           },
           {
-            path: `${base}/grid-views/projects`,
-            label: 'Product Projects',
-          },
-          {
-            path: `${base}/modules/charts/line`,
-            label: 'Product Analytics',
+            path: `${base}/productcenter/accessories-management`,
+            label: 'Accessories Management',
           },
         ],
       },
@@ -176,16 +172,12 @@ export async function getMenus(locale: string) {
       collapsible: true,
       children: [
         {
-          path: `${base}/dashboards/listing`,
-          label: '产品看板',
+          path: `${base}/productcenter/machine-product-library`,
+          label: '机器产品库',
         },
         {
-          path: `${base}/grid-views/projects`,
-          label: '项目视图',
-        },
-        {
-          path: `${base}/modules/charts/line`,
-          label: '产品分析',
+          path: `${base}/productcenter/accessories-management`,
+          label: '配件管理',
         },
       ],
     },

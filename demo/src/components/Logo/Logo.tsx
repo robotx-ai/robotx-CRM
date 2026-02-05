@@ -14,24 +14,16 @@ const Logo = ({ mini = false, mode = 'light', sx }: LogoProps) => {
       <Link href={'/dashboards/misc'}>
         {!mini ? (
           <Image
-            src={
-              mode === 'light'
-                ? `/assets/images/logo.png`
-                : `/assets/images/logo-white.png`
-            }
-            alt='Jumbo React'
+            src={`/assets/images/logos/robotx_logo.webp`}
+            alt='Robotx CRM'
             width={110}
             height={35}
             style={{ verticalAlign: 'middle' }}
           />
         ) : (
           <Image
-            src={
-              mode === 'light'
-                ? `/assets/images/logo-short.png`
-                : `/assets/images/logo-short-white.png`
-            }
-            alt='Jumbo React'
+            src={`/assets/images/logos/robotx_logo.webp`}
+            alt='Robotx CRM'
             width={35}
             height={35}
             style={{ verticalAlign: 'middle' }}

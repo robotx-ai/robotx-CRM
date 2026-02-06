@@ -1,5 +1,8 @@
 'use client';
 
+import Image from 'next/image';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import {
   Box,
   Button,
@@ -12,16 +15,18 @@ import {
   MenuItem,
   Select,
   Stack,
+  Tab,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  Tabs,
   TextField,
   Typography,
 } from '@mui/material';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 const statusColors: Record<string, 'success' | 'warning' | 'error' | 'info' | 'default'> = {
   Active: 'success',
@@ -37,90 +42,84 @@ const statusColorsZh: Record<string, 'success' | 'warning' | 'error' | 'info' | 
   维护中: 'warning',
 };
 
-export default function MachineProductLibraryPage({
-  params,
-}: {
-  params: { lang: string };
-}) {
-  const isZh = params.lang === 'zh-CN';
+export default function MachineProductLibraryPage() {
+  const params = useParams();
+  const langParam = params.lang;
+  const lang = Array.isArray(langParam) ? langParam[0] : langParam ?? 'en-US';
+  const isZh = lang === 'zh-CN';
+  const [storeTab, setStoreTab] = useState(0);
 
   const rows = useMemo(
     () =>
       isZh
         ? [
             {
-              model: 'RX-3000 Pro',
-              sn: 'RX3P-2024-0012',
-              agent: '上海代理',
-              importTime: '2026-01-18 10:42',
+              model: 'PUDU CC1 Pro',
+              subtitle: 'PUDU CC1 Pro，CCBC02，美规，灰色 & 黄绿色',
+              image: '/assets/images/products/pudu-cc1.png',
+              sn: '8880R5A16070015',
+              agent: 'Robotx AI Inc.',
+              importTime: '2026-01-12 12:24:02',
               status: '运行中',
-              software: 'v4.6.2',
-              firmware: 'FW-2.1.9',
+              software: 'SC5.14.46.2512092039-cc1',
+              firmware: '22.2.12',
             },
             {
-              model: 'RX-3000 Pro',
-              sn: 'RX3P-2024-0147',
-              agent: '华南代理',
-              importTime: '2026-01-22 16:05',
-              status: '空闲',
-              software: 'v4.6.2',
-              firmware: 'FW-2.1.8',
+              model: 'PUDU MT1 Max',
+              subtitle: 'PUDU MT1 Max，MTBC03，美规，黑色',
+              image: '/assets/images/products/pudu-mt1-max.png',
+              sn: '868025B09070060',
+              agent: 'Robotx AI Inc.',
+              importTime: '2026-01-12 11:30:14',
+              status: '运行中',
+              software: 'SC5.17.13.2511182031-mt1',
+              firmware: '22.2.40',
             },
             {
-              model: 'RX-2000',
-              sn: 'RX2-2023-0091',
-              agent: '北京代理',
-              importTime: '2025-12-28 09:12',
-              status: '离线',
-              software: 'v4.5.9',
-              firmware: 'FW-2.0.6',
-            },
-            {
-              model: 'RX-Alpha',
-              sn: 'RXA-2025-0004',
-              agent: '西南代理',
-              importTime: '2026-02-02 11:21',
-              status: '维护中',
-              software: 'v4.6.1',
-              firmware: 'FW-2.1.3',
+              model: 'PUDU MT1 Vac',
+              subtitle: 'PUDU MT1 Vac，MTBC02，美规，黑色',
+              image: '/assets/images/products/pudu-mt1-vac.png',
+              sn: '899025921070013',
+              agent: 'Robotx AI Inc.',
+              importTime: '2026-01-12 10:13:36',
+              status: '运行中',
+              software: 'SC5.16.11.2510101914-mt1',
+              firmware: '22.2.39',
             },
           ]
         : [
             {
-              model: 'RX-3000 Pro',
-              sn: 'RX3P-2024-0012',
-              agent: 'Shanghai Agent',
-              importTime: '2026-01-18 10:42',
+              model: 'PUDU CC1 Pro',
+              subtitle: 'PUDU CC1 Pro, CCBC02, USA standard, Grey & Yellow Green',
+              image: '/assets/images/products/pudu-cc1.png',
+              sn: '8880R5A16070015',
+              agent: 'Robotx AI Inc.',
+              importTime: '2026-01-12 12:24:02',
               status: 'Active',
-              software: 'v4.6.2',
-              firmware: 'FW-2.1.9',
+              software: 'SC5.14.46.2512092039-cc1',
+              firmware: '22.2.12',
             },
             {
-              model: 'RX-3000 Pro',
-              sn: 'RX3P-2024-0147',
-              agent: 'South China Agent',
-              importTime: '2026-01-22 16:05',
-              status: 'Idle',
-              software: 'v4.6.2',
-              firmware: 'FW-2.1.8',
+              model: 'PUDU MT1 Max',
+              subtitle: 'PUDU MT1 Max, MTBC03, USA standard, Black',
+              image: '/assets/images/products/pudu-mt1-max.png',
+              sn: '868025B09070060',
+              agent: 'Robotx AI Inc.',
+              importTime: '2026-01-12 11:30:14',
+              status: 'Active',
+              software: 'SC5.17.13.2511182031-mt1',
+              firmware: '22.2.40',
             },
             {
-              model: 'RX-2000',
-              sn: 'RX2-2023-0091',
-              agent: 'Beijing Agent',
-              importTime: '2025-12-28 09:12',
-              status: 'Offline',
-              software: 'v4.5.9',
-              firmware: 'FW-2.0.6',
-            },
-            {
-              model: 'RX-Alpha',
-              sn: 'RXA-2025-0004',
-              agent: 'Southwest Agent',
-              importTime: '2026-02-02 11:21',
-              status: 'Maintenance',
-              software: 'v4.6.1',
-              firmware: 'FW-2.1.3',
+              model: 'PUDU MT1 Vac',
+              subtitle: 'PUDU MT1 Vac, MTBC02, USA standard, Black',
+              image: '/assets/images/products/pudu-mt1-vac.png',
+              sn: '899025921070013',
+              agent: 'Robotx AI Inc.',
+              importTime: '2026-01-12 10:13:36',
+              status: 'Active',
+              software: 'SC5.16.11.2510101914-mt1',
+              firmware: '22.2.39',
             },
           ],
     [isZh]
@@ -140,60 +139,22 @@ export default function MachineProductLibraryPage({
           </Typography>
         </Box>
 
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-          <Card sx={{ flex: 1 }}>
-            <CardContent>
-              <Typography variant='overline' color='text.secondary'>
-                {isZh ? '运行中' : 'Active'}
-              </Typography>
-              <Typography variant='h4' sx={{ fontWeight: 700 }}>
-                128
-              </Typography>
-              <Typography variant='body2' color='text.secondary'>
-                {isZh ? '本月 +12 台' : '+12 this month'}
-              </Typography>
-            </CardContent>
-          </Card>
-          <Card sx={{ flex: 1 }}>
-            <CardContent>
-              <Typography variant='overline' color='text.secondary'>
-                {isZh ? '空闲' : 'Idle'}
-              </Typography>
-              <Typography variant='h4' sx={{ fontWeight: 700 }}>
-                46
-              </Typography>
-              <Typography variant='body2' color='text.secondary'>
-                {isZh ? '等待部署' : 'Awaiting deployment'}
-              </Typography>
-            </CardContent>
-          </Card>
-          <Card sx={{ flex: 1 }}>
-            <CardContent>
-              <Typography variant='overline' color='text.secondary'>
-                {isZh ? '离线' : 'Offline'}
-              </Typography>
-              <Typography variant='h4' sx={{ fontWeight: 700 }}>
-                9
-              </Typography>
-              <Typography variant='body2' color='text.secondary'>
-                {isZh ? '需要跟进' : 'Requires follow-up'}
-              </Typography>
-            </CardContent>
-          </Card>
-          <Card sx={{ flex: 1 }}>
-            <CardContent>
-              <Typography variant='overline' color='text.secondary'>
-                {isZh ? '维护中' : 'Maintenance'}
-              </Typography>
-              <Typography variant='h4' sx={{ fontWeight: 700 }}>
-                4
-              </Typography>
-              <Typography variant='body2' color='text.secondary'>
-                {isZh ? '工程师处理中' : 'Engineering in progress'}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Stack>
+        <Card>
+          <CardContent>
+            <Tabs
+              value={storeTab}
+              onChange={(_, value) => setStoreTab(value)}
+              textColor='primary'
+              indicatorColor='primary'
+              sx={{ '& .MuiTab-root': { textTransform: 'none' } }}
+            >
+              <Tab
+                label={isZh ? '门店已安装 (3)' : 'Installed in the store (3)'}
+              />
+              <Tab label={isZh ? '库存未绑定' : 'Unbound in stock'} />
+            </Tabs>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardContent>
@@ -290,7 +251,7 @@ export default function MachineProductLibraryPage({
               <Table size='small'>
                 <TableHead>
                   <TableRow>
-                    <TableCell>{isZh ? '型号' : 'Model'}</TableCell>
+                    <TableCell>{isZh ? '产品名称' : 'Product name'}</TableCell>
                     <TableCell>{isZh ? '序列号' : 'Serial Number'}</TableCell>
                     <TableCell>{isZh ? '代理' : 'Agent'}</TableCell>
                     <TableCell>{isZh ? '导入时间' : 'Import Time'}</TableCell>
@@ -303,7 +264,41 @@ export default function MachineProductLibraryPage({
                 <TableBody>
                   {rows.map((row) => (
                     <TableRow key={row.sn} hover>
-                      <TableCell>{row.model}</TableCell>
+                      <TableCell>
+                        <Stack direction='row' spacing={2} alignItems='center'>
+                          <Box
+                            sx={{
+                              width: 48,
+                              height: 48,
+                              borderRadius: 2,
+                              bgcolor: 'grey.100',
+                              border: '1px solid',
+                              borderColor: 'divider',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              overflow: 'hidden',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <Image
+                              src={row.image}
+                              alt={row.model}
+                              width={40}
+                              height={40}
+                              style={{ objectFit: 'contain' }}
+                            />
+                          </Box>
+                          <Box>
+                            <Typography variant='body2' sx={{ fontWeight: 600 }}>
+                              {row.model}
+                            </Typography>
+                            <Typography variant='caption' color='text.secondary'>
+                              {row.subtitle}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </TableCell>
                       <TableCell>{row.sn}</TableCell>
                       <TableCell>{row.agent}</TableCell>
                       <TableCell>{row.importTime}</TableCell>
@@ -320,8 +315,19 @@ export default function MachineProductLibraryPage({
                       <TableCell>{row.firmware}</TableCell>
                       <TableCell align='right'>
                         <Stack direction='row' spacing={1} justifyContent='flex-end'>
-                          <Button size='small'>{isZh ? '查看' : 'View'}</Button>
-                          <Button size='small' color='secondary'>
+                          <Button
+                            size='small'
+                            component={Link}
+                            href={`/${lang}/productcenter/machine-product-library/product-info`}
+                          >
+                            {isZh ? '查看' : 'View'}
+                          </Button>
+                          <Button
+                            size='small'
+                            color='secondary'
+                            component={Link}
+                            href={`/${lang}/productcenter/machine-product-library/product-edit`}
+                          >
                             {isZh ? '编辑' : 'Edit'}
                           </Button>
                         </Stack>

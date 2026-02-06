@@ -10,16 +10,12 @@ export async function getMenus(locale: string) {
         collapsible: true,
         children: [
           {
-            path: `${base}/dashboards/crm`,
-            label: 'Customer Overview',
+            path: `${base}/customerCenter/storeManagement`,
+            label: 'Store Management',
           },
           {
-            path: `${base}/list-views/users`,
-            label: 'Customer List',
-          },
-          {
-            path: `${base}/apps/contact`,
-            label: 'Contacts',
+            path: `${base}/customerCenter/agents`,
+            label: 'Subordinate Agent Management',
           },
         ],
       },
@@ -153,16 +149,12 @@ export async function getMenus(locale: string) {
       collapsible: true,
       children: [
         {
-          path: `${base}/dashboards/crm`,
-          label: '客户概览',
+          path: `${base}/customerCenter/storeManagement`,
+          label: '门店管理',
         },
         {
-          path: `${base}/list-views/users`,
-          label: '客户列表',
-        },
-        {
-          path: `${base}/apps/contact`,
-          label: '联系人',
+          path: `${base}/customerCenter/agents`,
+          label: '下级代理管理',
         },
       ],
     },

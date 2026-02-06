@@ -15,6 +15,14 @@ on:
         description: Release PR branch name
         required: true
         default: codex/release-dev-to-main
+      auto_merge:
+        description: Automatically merge PR when checks pass
+        required: true
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
 
 permissions:
   contents: write
@@ -80,12 +88,35 @@ jobs:
             gh pr edit "$EXISTING_PR" \
               --title "$TITLE" \
               --body "$BODY"
-            echo "Updated existing PR #$EXISTING_PR"
+            PR_NUMBER="$EXISTING_PR"
+            echo "Updated existing PR #$PR_NUMBER"
           else
             gh pr create \
               --base "$BASE_BRANCH" \
               --head "$PR_BRANCH" \
               --title "$TITLE" \
               --body "$BODY"
-            echo "Created new PR from $PR_BRANCH to $BASE_BRANCH"
+            PR_NUMBER=$(gh pr list \
+              --base "$BASE_BRANCH" \
+              --head "$PR_BRANCH" \
+              --state open \
+              --json number \
+              --jq '.[0].number // empty')
+            echo "Created new PR #$PR_NUMBER from $PR_BRANCH to $BASE_BRANCH"
+          fi
+
+          if [ "${{ inputs.auto_merge }}" = "true" ]; then
+            if [ -n "${PR_NUMBER:-}" ]; then
+              set +e
+              gh pr merge "$PR_NUMBER" --squash --auto --delete-branch
+              MERGE_EXIT=$?
+              set -e
+              if [ "$MERGE_EXIT" -eq 0 ]; then
+                echo "Auto-merge enabled for PR #$PR_NUMBER"
+              else
+                echo "Auto-merge could not be enabled. Check repo auto-merge settings and token permissions."
+              fi
+            else
+              echo "Skip auto-merge: PR number not found."
+            fi
           fi

@@ -1,0 +1,68 @@
+name: Create release PR from dev (clean paths)
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_branch:
+        description: Source branch to release from
+        required: true
+        default: dev
+      base_branch:
+        description: Base branch to open PR against
+        required: true
+        default: main
+      pr_branch:
+        description: Release PR branch name
+        required: true
+        default: codex/release-dev-to-main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-release-pr:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_branch }}
+          fetch-depth: 0
+
+      - name: Remove forbidden paths from release content
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm -r --ignore-unmatch demo-ts pudu_reference starter-template-ts .skills
+
+      - name: Create or update PR to main
+        id: cpr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore(release): exclude templates and skills from main"
+          branch: ${{ inputs.pr_branch }}
+          base: ${{ inputs.base_branch }}
+          title: "chore(release): sync from ${{ inputs.source_branch }} without templates/skills"
+          body: |
+            Auto-generated release PR from `${{ inputs.source_branch }}` to `${{ inputs.base_branch }}`.
+
+            Excluded paths:
+            - `demo-ts/`
+            - `pudu_reference/`
+            - `starter-template-ts/`
+            - `.skills/`
+          labels: |
+            release
+            automated
+          delete-branch: false
+
+      - name: Workflow summary
+        if: always()
+        shell: bash
+        run: |
+          echo "pull-request-operation=${{ steps.cpr.outputs.pull-request-operation }}"
+          echo "pull-request-number=${{ steps.cpr.outputs.pull-request-number }}"
+          echo "pull-request-url=${{ steps.cpr.outputs.pull-request-url }}"

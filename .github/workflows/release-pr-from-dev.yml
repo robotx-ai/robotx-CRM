@@ -25,44 +25,75 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source branch
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.source_branch }}
           fetch-depth: 0
 
-      - name: Remove forbidden paths from release content
+      - name: Build clean release branch from source
         shell: bash
         run: |
           set -euo pipefail
+
+          SOURCE_BRANCH="${{ inputs.source_branch }}"
+          PR_BRANCH="${{ inputs.pr_branch }}"
+
+          git fetch origin "$SOURCE_BRANCH" "$PR_BRANCH" || true
+          git checkout -B "$PR_BRANCH" "origin/$SOURCE_BRANCH"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
           git rm -r --ignore-unmatch demo-ts pudu_reference starter-template-ts .skills
 
-      - name: Create or update PR to main
-        id: cpr
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "chore(release): exclude templates and skills from main"
-          branch: ${{ inputs.pr_branch }}
-          base: ${{ inputs.base_branch }}
-          title: "chore(release): sync from ${{ inputs.source_branch }} without templates/skills"
-          body: |
-            Auto-generated release PR from `${{ inputs.source_branch }}` to `${{ inputs.base_branch }}`.
+          if git diff --cached --quiet; then
+            echo "No forbidden paths found in source branch; no exclusion commit needed."
+          else
+            git commit -m "chore(release): exclude templates and skills from main"
+          fi
 
-            Excluded paths:
-            - `demo-ts/`
-            - `pudu_reference/`
-            - `starter-template-ts/`
-            - `.skills/`
-          labels: |
-            release
-            automated
-          delete-branch: false
+          git push --force-with-lease origin "$PR_BRANCH"
 
-      - name: Workflow summary
-        if: always()
+      - name: Create or update PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
-          echo "pull-request-operation=${{ steps.cpr.outputs.pull-request-operation }}"
-          echo "pull-request-number=${{ steps.cpr.outputs.pull-request-number }}"
-          echo "pull-request-url=${{ steps.cpr.outputs.pull-request-url }}"
+          set -euo pipefail
+
+          BASE_BRANCH="${{ inputs.base_branch }}"
+          PR_BRANCH="${{ inputs.pr_branch }}"
+          SOURCE_BRANCH="${{ inputs.source_branch }}"
+
+          TITLE="chore(release): sync from ${SOURCE_BRANCH} without templates/skills"
+          BODY=$(cat <<'EOF'
+Auto-generated release PR.
+
+Excluded paths:
+- `demo-ts/`
+- `pudu_reference/`
+- `starter-template-ts/`
+- `.skills/`
+EOF
+)
+
+          EXISTING_PR=$(gh pr list \
+            --base "$BASE_BRANCH" \
+            --head "$PR_BRANCH" \
+            --state open \
+            --json number \
+            --jq '.[0].number // empty')
+
+          if [ -n "$EXISTING_PR" ]; then
+            gh pr edit "$EXISTING_PR" \
+              --title "$TITLE" \
+              --body "$BODY"
+            echo "Updated existing PR #$EXISTING_PR"
+          else
+            gh pr create \
+              --base "$BASE_BRANCH" \
+              --head "$PR_BRANCH" \
+              --title "$TITLE" \
+              --body "$BODY"
+            echo "Created new PR from $PR_BRANCH to $BASE_BRANCH"
+          fi

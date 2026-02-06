@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import {
   Box,
   Button,
@@ -37,12 +39,11 @@ const statusColorsZh: Record<string, 'success' | 'warning' | 'error' | 'info' | 
   维护中: 'warning',
 };
 
-export default function MachineProductLibraryPage({
-  params,
-}: {
-  params: { lang: string };
-}) {
-  const isZh = params.lang === 'zh-CN';
+export default function MachineProductLibraryPage() {
+  const params = useParams();
+  const langParam = params.lang;
+  const lang = Array.isArray(langParam) ? langParam[0] : langParam ?? 'en-US';
+  const isZh = lang === 'zh-CN';
 
   const rows = useMemo(
     () =>
@@ -320,8 +321,19 @@ export default function MachineProductLibraryPage({
                       <TableCell>{row.firmware}</TableCell>
                       <TableCell align='right'>
                         <Stack direction='row' spacing={1} justifyContent='flex-end'>
-                          <Button size='small'>{isZh ? '查看' : 'View'}</Button>
-                          <Button size='small' color='secondary'>
+                          <Button
+                            size='small'
+                            component={Link}
+                            href={`/${lang}/productcenter/machine-product-library/product-info`}
+                          >
+                            {isZh ? '查看' : 'View'}
+                          </Button>
+                          <Button
+                            size='small'
+                            color='secondary'
+                            component={Link}
+                            href={`/${lang}/productcenter/machine-product-library/product-edit`}
+                          >
                             {isZh ? '编辑' : 'Edit'}
                           </Button>
                         </Stack>

@@ -1,11 +1,12 @@
 import { Box, Typography } from '@mui/material';
 
-export default function AccessoriesManagementPage({
+export default async function AccessoriesManagementPage({
   params,
 }: {
-  params: { lang: string };
+  params: Promise<{ lang: string }>;
 }) {
-  const isZh = params.lang === 'zh-CN';
+  const { lang } = await params;
+  const isZh = lang === 'zh-CN';
 
   return (
     <Box sx={{ px: { xs: 3, md: 6 }, py: { xs: 4, md: 6 } }}>

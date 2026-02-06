@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="24px" height="24px" viewBox="0 0 24 24" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>icon-crm-高亮</title>
+    <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="icon-crm-高亮">
+            <g id="编组-52">
+                <polygon id="Rectangle" points="1 1 23 1 23 23 1 23"></polygon>
+                <path d="M11,2.03709274 L11,12.5263926 L11.7990381,12.9877175 L13.1691107,13.701379 L13.7990381,14.0650678 L20.3572696,17.481206 C18.5691633,20.195965 15.4938247,21.9877175 12,21.9877175 C6.4771525,21.9877175 2,17.510565 2,11.9877175 C2,6.8023694 5.94667731,2.53881717 11,2.03709274 L11,2.03709274 Z M12.5,2 C17.7905558,2.26051565 22,6.63253239 22,11.9877175 C22,13.4810924 21.6726491,14.8980104 21.085789,16.17063 L20.0197972,15.6149704 L20.035254,15.5881984 L12.5,11.6603672 L12.5,2 L12.5,2 Z" id="形状" fill="#FF8000" fill-rule="nonzero"></path>
+                <rect id="矩形备份-20" fill-opacity="0.01" fill="#D8D8D8" x="0" y="0" width="24" height="24"></rect>
+            </g>
+            <g id="路径" transform="translate(2.000000, 2.000000)"></g>
+        </g>
+    </g>
+</svg>

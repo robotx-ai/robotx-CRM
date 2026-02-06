@@ -66,16 +66,7 @@ jobs:
           SOURCE_BRANCH="${{ inputs.source_branch }}"
 
           TITLE="chore(release): sync from ${SOURCE_BRANCH} without templates/skills"
-          BODY=$(cat <<'EOF'
-Auto-generated release PR.
-
-Excluded paths:
-- `demo-ts/`
-- `pudu_reference/`
-- `starter-template-ts/`
-- `.skills/`
-EOF
-)
+          BODY=$'Auto-generated release PR.\n\nExcluded paths:\n- `demo-ts/`\n- `pudu_reference/`\n- `starter-template-ts/`\n- `.skills/`'
 
           EXISTING_PR=$(gh pr list \
             --base "$BASE_BRANCH" \

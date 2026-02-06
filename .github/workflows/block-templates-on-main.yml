@@ -1,0 +1,40 @@
+name: Block template folders on main PR
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  block-forbidden-paths:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fail if forbidden paths are changed
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+
+          CHANGED_FILES=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+          FORBIDDEN_REGEX='^(demo-ts/|pudu_reference/|starter-template-ts/|\.skills/)'
+
+          if echo "$CHANGED_FILES" | grep -E "$FORBIDDEN_REGEX"; then
+            echo ""
+            echo "Error: PRs to main must not include template/skills paths."
+            echo "Blocked paths: demo-ts/, pudu_reference/, starter-template-ts/, .skills/"
+            exit 1
+          fi
+
+          echo "No forbidden paths detected."

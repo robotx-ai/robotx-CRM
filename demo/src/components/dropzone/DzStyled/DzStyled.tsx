@@ -27,7 +27,7 @@ const DzStyled = () => {
     isDragActive,
     isDragAccept,
     isDragReject,
-  } = useDropzone({ accept: 'image/*' } as any);
+  } = useDropzone({ accept: { 'image/*': [] } });
 
   const style = React.useMemo(
     () => ({

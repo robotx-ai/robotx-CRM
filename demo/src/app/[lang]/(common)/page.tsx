@@ -1,8 +1,10 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Box, Button, Stack, Typography } from '@mui/material';
+import { Params } from '@/types/paramsType';
 
-export default function Home({ params }: { params: { lang: string } }) {
+export default async function Home(props: Params) {
+  const params = await props.params;
   const { lang } = params;
   const isZh = lang === 'zh-CN';
 

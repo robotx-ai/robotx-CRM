@@ -45,8 +45,7 @@ const img: React.CSSProperties = {
 const DzPreviews = () => {
   const [files, setFiles] = React.useState<FileWithPreview[]>([]);
   const { getRootProps, getInputProps } = useDropzone({
-    /**todo accept props use any */
-    accept: 'image/*' as any,
+    accept: { 'image/*': [] },
     onDrop: (acceptedFiles: File[]) => {
       const filesWithPreview = acceptedFiles.map((file) =>
         Object.assign(file, {

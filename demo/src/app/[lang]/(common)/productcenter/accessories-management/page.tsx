@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import {
   Box,
   Breadcrumbs,
@@ -25,12 +26,11 @@ import {
   Link as MuiLink,
 } from '@mui/material';
 
-export default function AccessoriesManagementPage({
-  params,
-}: {
-  params: { lang: string };
-}) {
-  const isZh = params.lang === 'zh-CN';
+export default function AccessoriesManagementPage() {
+  const params = useParams();
+  const langParam = params.lang;
+  const lang = Array.isArray(langParam) ? langParam[0] : langParam ?? 'en-US';
+  const isZh = lang === 'zh-CN';
 
   return (
     <Box sx={{ px: { xs: 3, md: 6 }, py: { xs: 4, md: 6 } }}>
@@ -41,7 +41,7 @@ export default function AccessoriesManagementPage({
               component={Link}
               underline='hover'
               color='text.secondary'
-              href={`/${params.lang}/productcenter/machine-product-library`}
+              href={`/${lang}/productcenter/machine-product-library`}
             >
               {isZh ? '产品中心' : 'Product Center'}
             </MuiLink>

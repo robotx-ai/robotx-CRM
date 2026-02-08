@@ -35,6 +35,11 @@ export async function getMenus(locale: string) {
         ],
       },
       {
+        path: `${base}/customerCenter/salesLeads`,
+        label: 'Sales Leads Management',
+        icon: 'crm',
+      },
+      {
         label: 'Data Center',
         icon: 'metric',
         collapsible: true,
@@ -57,11 +62,6 @@ export async function getMenus(locale: string) {
         path: `${base}/apps/chat`,
         label: 'App Center',
         icon: 'chat',
-      },
-      {
-        path: `${base}/customerCenter/salesLeads`,
-        label: 'Sales Leads Management',
-        icon: 'crm',
       },
       {
         label: 'Log Center',
@@ -174,6 +174,11 @@ export async function getMenus(locale: string) {
       ],
     },
     {
+      path: `${base}/customerCenter/salesLeads`,
+      label: '销售线索管理',
+      icon: 'crm',
+    },
+    {
       label: '数据中心',
       icon: 'metric',
       collapsible: true,
@@ -196,11 +201,6 @@ export async function getMenus(locale: string) {
       path: `${base}/apps/chat`,
       label: '应用中心',
       icon: 'chat',
-    },
-    {
-      path: `${base}/customerCenter/salesLeads`,
-      label: '销售线索管理',
-      icon: 'crm',
     },
     {
       label: '日志中心',

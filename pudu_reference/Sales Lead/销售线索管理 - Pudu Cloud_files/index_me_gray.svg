@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="24px" height="24px" viewBox="0 0 24 24" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>icon-我的-默认</title>
+    <g id="icon" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="tab-bar" transform="translate(-36.000000, -45.000000)">
+            <g id="icon-我的-默认" transform="translate(36.000000, 45.000000)">
+                <rect id="Rectangle-Copy" opacity="0" x="0" y="0" width="24" height="24"></rect>
+                <path d="M3.5,20.5 L20.5,20.5 C20.5,15.8055796 16.6944204,12 12,12 C7.30557963,12 3.5,15.8055796 3.5,20.5 Z M12,10.5 C17.5228475,10.5 22,14.9771525 22,20.5 L22,22 L2,22 L2,20.5 C2,14.9771525 6.4771525,10.5 12,10.5 Z" id="Rectangle-Copy-2" fill="#545861" fill-rule="nonzero"></path>
+                <path d="M12,10.5 C13.9329966,10.5 15.5,8.93299662 15.5,7 C15.5,5.06700338 13.9329966,3.5 12,3.5 C10.0670034,3.5 8.5,5.06700338 8.5,7 C8.5,8.93299662 10.0670034,10.5 12,10.5 Z M12,12 C9.23857625,12 7,9.76142375 7,7 C7,4.23857625 9.23857625,2 12,2 C14.7614237,2 17,4.23857625 17,7 C17,9.76142375 14.7614237,12 12,12 Z" id="Oval-Copy-2" fill="#545861" fill-rule="nonzero"></path>
+            </g>
+        </g>
+    </g>
+</svg>

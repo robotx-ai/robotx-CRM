@@ -9,11 +9,13 @@ import { Visibility, VisibilityOff } from '@mui/icons-material';
 import LoadingButton from '@mui/lab/LoadingButton';
 import { IconButton, InputAdornment, Stack, Typography } from '@mui/material';
 import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useSnackbar } from 'notistack';
 import React from 'react';
 import { Link } from '../NextLink';
 import { validationSchema } from './validation';
+
+const supportedLocales = ['en-US', 'ar-SA', 'es-ES', 'fr-FR', 'it-IT', 'zh-CN'];
 
 const LoginForm = () => {
   const [loading, setLoading] = React.useState<boolean>(false);
@@ -23,6 +25,8 @@ const LoginForm = () => {
     showPassword: false,
   });
   const router = useRouter();
+  const pathname = usePathname();
+
   const handleLogin = async (data: { email: string; password: string }) => {
     setLoading(true);
     const response = await signIn('credentials', {
@@ -33,7 +37,13 @@ const LoginForm = () => {
     });
 
     if (response?.ok) {
-      router.push('/dashboards/misc');
+      const pathLocale = pathname?.split('/')[1];
+      const lang =
+        pathLocale && supportedLocales.includes(pathLocale)
+          ? pathLocale
+          : 'en-US';
+
+      router.push(`/${lang}/welcome`);
       router.refresh();
     } else {
       enqueueSnackbar('invalid email or password!', {

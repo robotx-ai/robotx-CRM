@@ -10,8 +10,8 @@ module.exports = {
     return [
       {
         source: '/',
-        destination: '/en-US/dashboards/misc',
-        permanent: true,
+        destination: '/en-US/welcome',
+        permanent: false,
       },
     ];
   },

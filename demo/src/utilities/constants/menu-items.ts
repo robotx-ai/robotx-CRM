@@ -59,7 +59,7 @@ export async function getMenus(locale: string) {
         icon: 'chat',
       },
       {
-        path: `${base}/dashboards/crm`,
+        path: `${base}/customerCenter/salesLeads`,
         label: 'Sales Leads Management',
         icon: 'crm',
       },
@@ -198,7 +198,7 @@ export async function getMenus(locale: string) {
       icon: 'chat',
     },
     {
-      path: `${base}/dashboards/crm`,
+      path: `${base}/customerCenter/salesLeads`,
       label: '销售线索管理',
       icon: 'crm',
     },

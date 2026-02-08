@@ -82,7 +82,7 @@ export async function generateStaticParams() {
   return [{ lang: 'en-US' }];
 }
 export const metadata: Metadata = {
-  title: 'Jumbo - Admin Dashboard',
+  title: 'Robotx Cloud',
   icons: `${ASSET_IMAGES}/favicon.ico`,
 };
 

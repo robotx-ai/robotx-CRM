@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "auth:provision-test-user": "node scripts/provision-supabase-test-user.mjs",
+    "db:seed-machine-library": "node scripts/seed-machine-library-entries.mjs",
     "format": "prettier --check --ignore-path .gitignore .",
     "format:fix": "prettier --write --ignore-path .gitignore .",
     "install:force": "npm install --force"

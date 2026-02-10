@@ -84,7 +84,7 @@ export const Signin1 = () => {
         <CardContent sx={{ pt: 0 }}>
           <Avatar
             alt='Remy Sharp'
-            src={getAssetPath(`${ASSET_AVATARS}/avatar10.jpg`)}
+            src={getAssetPath(`${ASSET_AVATARS}/robot_1.png`)}
             sx={{
               width: 56,
               height: 56,

@@ -69,7 +69,7 @@ const LoginForm = () => {
           fullWidth
           fieldName={'email'}
           label={'Email'}
-          defaultValue='demo@example.com'
+          defaultValue='robotx.tester@local.dev'
         />
         <JumboOutlinedInput
           fieldName={'password'}
@@ -88,7 +88,7 @@ const LoginForm = () => {
             </InputAdornment>
           }
           sx={{ bgcolor: (theme) => theme.palette.background.paper }}
-          defaultValue={'zab#723'}
+          defaultValue={'Robotx#12345'}
         />
 
         <Stack

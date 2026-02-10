@@ -8,6 +8,7 @@
     "clean-build": "rm -rf .next && next build",
     "start": "next start",
     "lint": "next lint",
+    "auth:provision-test-user": "node scripts/provision-supabase-test-user.mjs",
     "format": "prettier --check --ignore-path .gitignore .",
     "format:fix": "prettier --write --ignore-path .gitignore .",
     "install:force": "npm install --force"
@@ -34,6 +35,7 @@
     "@react-google-maps/api": "^2.20.5",
     "@react-jvectormap/core": "^1.0.4",
     "@react-jvectormap/world": "^1.1.2",
+    "@supabase/supabase-js": "^2.95.3",
     "@tiptap/extension-color": "^2.11.5",
     "@tiptap/extension-list-item": "^2.11.5",
     "@tiptap/extension-text-style": "^2.11.5",

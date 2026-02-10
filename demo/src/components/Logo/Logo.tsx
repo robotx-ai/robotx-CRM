@@ -27,9 +27,9 @@ const Logo = ({ mini = false, mode: _mode = 'light', sx }: LogoProps) => {
           <Image
             src={`/assets/images/logos/robotx_logo.webp`}
             alt='Robotx CRM'
-            width={110}
+            width={118}
             height={35}
-            style={{ verticalAlign: 'middle' }}
+            style={{ verticalAlign: 'middle', objectFit: 'contain' }}
           />
         ) : (
           <Image
@@ -37,7 +37,7 @@ const Logo = ({ mini = false, mode: _mode = 'light', sx }: LogoProps) => {
             alt='Robotx CRM'
             width={35}
             height={35}
-            style={{ verticalAlign: 'middle' }}
+            style={{ verticalAlign: 'middle', objectFit: 'contain' }}
           />
         )}
       </Link>

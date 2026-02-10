@@ -44,9 +44,9 @@ export const Signin1 = () => {
       <Div sx={{ mb: 3, display: 'inline-flex' }}>
         <Image
           height={35}
-          width={110}
-          src={`${ASSET_IMAGES}/logo.png`}
-          alt='Jumbo React'
+          width={118}
+          src={`${ASSET_IMAGES}/logos/robotx_logo.webp`}
+          alt='Robotx CRM'
         />
       </Div>
       <Card sx={{ maxWidth: '100%', width: 360, mb: 4 }}>

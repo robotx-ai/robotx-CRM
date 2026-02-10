@@ -17,17 +17,21 @@ export let activeLocale = defaultLocale;
 export function middleware(request: NextRequest) {
   // Check if there is any supported locale in the pathname
   const { pathname } = request.nextUrl;
+  const pathnameLocale = pathname.split('/')[1];
+  const requestLocale = locales.includes(pathnameLocale)
+    ? pathnameLocale
+    : activeLocale;
 
   const localeResponse = prefixLocale(request);
   if (localeResponse) {
     return NextResponse.redirect(localeResponse);
   }
 
-  if (isPublicPath(pathname, activeLocale)) {
+  if (isPublicPath(pathname, requestLocale)) {
     return NextResponse.next();
   }
 
-  if (isAnonymousPath(pathname, activeLocale)) {
+  if (isAnonymousPath(pathname, requestLocale)) {
     return anonymousMiddleware(request);
   }
 

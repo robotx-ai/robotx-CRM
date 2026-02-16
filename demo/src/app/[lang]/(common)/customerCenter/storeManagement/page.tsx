@@ -31,7 +31,8 @@ type StoreStatus = 'active' | 'pending' | 'inactive';
 
 type StoreManagementRow = {
   store_id: string;
-  store_name: string;
+  store_name: string | null;
+  storeName?: string | null;
   authorization_code: string | null;
   agent_company_name: string | null;
   proxy_account: string | null;
@@ -284,6 +285,7 @@ export default function StoreManagementPage() {
                 <TableHead>
                   <TableRow>
                     <TableCell>{isZh ? '代理客户数' : 'Client Number by Proxy'}</TableCell>
+                    <TableCell>{isZh ? '门店名称' : 'Store Name'}</TableCell>
                     <TableCell>{isZh ? '代理公司名称' : 'Agent Company Name'}</TableCell>
                     <TableCell>{isZh ? '代理账号' : 'Proxy account'}</TableCell>
                     <TableCell>{isZh ? '公司所在地' : 'Company location'}</TableCell>
@@ -309,6 +311,7 @@ export default function StoreManagementPage() {
                   {rows.map((row) => (
                     <TableRow key={row.store_id} hover>
                       <TableCell>{row.client_count}</TableCell>
+                      <TableCell>{row.store_name ?? row.storeName ?? '-'}</TableCell>
                       <TableCell>{row.agent_company_name ?? '-'}</TableCell>
                       <TableCell>{row.proxy_account ?? '-'}</TableCell>
                       <TableCell>{row.company_location ?? '-'}</TableCell>
@@ -329,7 +332,7 @@ export default function StoreManagementPage() {
                           <Button
                             size='small'
                             component={Link}
-                            href={`/${lang}/customerCenter/storeManagement/view?id=${encodeURIComponent(row.authorization_code ?? row.store_id)}&name=${encodeURIComponent(row.store_name)}`}
+                            href={`/${lang}/customerCenter/storeManagement/view?id=${encodeURIComponent(row.authorization_code ?? row.store_id)}&name=${encodeURIComponent(row.store_name ?? row.storeName ?? '')}`}
                           >
                             {isZh ? '查看' : 'View'}
                           </Button>
@@ -340,7 +343,12 @@ export default function StoreManagementPage() {
                             size='small'
                             color='error'
                             disabled={deletingId === row.store_id}
-                            onClick={() => void handleDelete(row.store_id, row.store_name)}
+                            onClick={() =>
+                              void handleDelete(
+                                row.store_id,
+                                row.store_name ?? row.storeName ?? row.store_id,
+                              )
+                            }
                           >
                             {deletingId === row.store_id
                               ? isZh
@@ -356,7 +364,7 @@ export default function StoreManagementPage() {
                   ))}
                   {!loading && rows.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={11} align='center'>
+                      <TableCell colSpan={12} align='center'>
                         {isZh ? '暂无数据' : 'No data'}
                       </TableCell>
                     </TableRow>

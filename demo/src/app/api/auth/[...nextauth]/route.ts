@@ -2,6 +2,8 @@ import NextAuth, { User } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { createClient } from '@supabase/supabase-js';
 
+const getEnv = (name: string) => process.env[name];
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -15,7 +17,7 @@ type MembershipRow = {
 };
 
 const handler = NextAuth({
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: getEnv('NEXTAUTH_SECRET'),
   pages: {
     signIn: '/auth/login-1', // Custom sign-in page
   },

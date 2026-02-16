@@ -16,19 +16,29 @@ import {
   Typography,
 } from '@mui/material';
 import { signOut } from 'next-auth/react';
+import { usePathname } from 'next/navigation';
 import React from 'react';
 import { authUser } from './data';
 
+const supportedLocales = ['en-US', 'ar-SA', 'es-ES', 'fr-FR', 'it-IT', 'zh-CN'];
+
 const AuthUserPopover = () => {
   const { theme } = useJumboTheme();
+  const pathname = usePathname();
 
   const logout = React.useCallback(() => {
     (async () => {
+      const pathLocale = pathname?.split('/')[1];
+      const locale =
+        pathLocale && supportedLocales.includes(pathLocale)
+          ? pathLocale
+          : 'en-US';
+
       await signOut({
-        callbackUrl: 'http://localhost:3000/en-US/auth/login-1',
+        callbackUrl: `/${locale}/auth/login-1`,
       });
     })();
-  }, []);
+  }, [pathname]);
 
   return (
     <ThemeProvider theme={theme}>

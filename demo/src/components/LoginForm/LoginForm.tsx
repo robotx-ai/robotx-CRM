@@ -13,7 +13,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useSnackbar } from 'notistack';
 import React from 'react';
 import { Link } from '../NextLink';
-import { validationSchema } from './validation';
+import { getValidationSchema } from './validation';
 
 const supportedLocales = ['en-US', 'ar-SA', 'es-ES', 'fr-FR', 'it-IT', 'zh-CN'];
 
@@ -26,6 +26,14 @@ const LoginForm = () => {
   });
   const router = useRouter();
   const pathname = usePathname();
+  const pathLocale = pathname?.split('/')[1];
+  const lang =
+    pathLocale && supportedLocales.includes(pathLocale) ? pathLocale : 'en-US';
+  const isZh = lang === 'zh-CN';
+  const validationSchema = React.useMemo(
+    () => getValidationSchema(isZh),
+    [isZh],
+  );
 
   const handleLogin = async (data: { email: string; password: string }) => {
     setLoading(true);
@@ -37,16 +45,10 @@ const LoginForm = () => {
     });
 
     if (response?.ok) {
-      const pathLocale = pathname?.split('/')[1];
-      const lang =
-        pathLocale && supportedLocales.includes(pathLocale)
-          ? pathLocale
-          : 'en-US';
-
       router.push(`/${lang}/welcome`);
       router.refresh();
     } else {
-      enqueueSnackbar('invalid email or password!', {
+      enqueueSnackbar(isZh ? '邮箱或密码错误' : 'Invalid email or password!', {
         variant: 'error',
       });
       setLoading(false);
@@ -68,12 +70,12 @@ const LoginForm = () => {
         <JumboInput
           fullWidth
           fieldName={'email'}
-          label={'Email'}
-          defaultValue='demo@example.com'
+          label={isZh ? '邮箱' : 'Email'}
+          defaultValue='robotx.tester@local.dev'
         />
         <JumboOutlinedInput
           fieldName={'password'}
-          label={'Password'}
+          label={isZh ? '密码' : 'Password'}
           type={values.showPassword ? 'text' : 'password'}
           margin='none'
           endAdornment={
@@ -88,7 +90,7 @@ const LoginForm = () => {
             </InputAdornment>
           }
           sx={{ bgcolor: (theme) => theme.palette.background.paper }}
-          defaultValue={'zab#723'}
+          defaultValue={'Robotx#12345'}
         />
 
         <Stack
@@ -98,12 +100,12 @@ const LoginForm = () => {
         >
           <JumboCheckbox
             fieldName='rememberMe'
-            label={'Remeber Me'}
+            label={isZh ? '记住我' : 'Remember Me'}
             defaultChecked
           />
           <Typography textAlign={'right'} variant={'body1'}>
-            <Link underline='none' href={'/auth/forgot-password'}>
-              {'Forgot your password?'}
+            <Link underline='none' href={`/${lang}/auth/forgot-password`}>
+              {isZh ? '忘记密码？' : 'Forgot your password?'}
             </Link>
           </Typography>
         </Stack>
@@ -114,7 +116,7 @@ const LoginForm = () => {
           size='large'
           loading={loading}
         >
-          {'Login'}
+          {isZh ? '登录' : 'Login'}
         </LoadingButton>
       </Stack>
     </JumboForm>

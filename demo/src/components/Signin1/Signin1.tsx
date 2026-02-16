@@ -18,8 +18,17 @@ import {
 } from '@mui/material';
 import shadows from '@mui/material/styles/shadows';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
+
+const supportedLocales = ['en-US', 'ar-SA', 'es-ES', 'fr-FR', 'it-IT', 'zh-CN'];
 
 export const Signin1 = () => {
+  const pathname = usePathname();
+  const pathLocale = pathname?.split('/')[1];
+  const lang =
+    pathLocale && supportedLocales.includes(pathLocale) ? pathLocale : 'en-US';
+  const isZh = lang === 'zh-CN';
+
   return (
     <Div
       sx={{
@@ -35,9 +44,9 @@ export const Signin1 = () => {
       <Div sx={{ mb: 3, display: 'inline-flex' }}>
         <Image
           height={35}
-          width={110}
-          src={`${ASSET_IMAGES}/logo.png`}
-          alt='Jumbo React'
+          width={118}
+          src={`${ASSET_IMAGES}/logos/robotx_logo.webp`}
+          alt='Robotx CRM'
         />
       </Div>
       <Card sx={{ maxWidth: '100%', width: 360, mb: 4 }}>
@@ -68,14 +77,14 @@ export const Signin1 = () => {
                 mb: 0,
               }}
             >
-              {'Sign In'}
+              {isZh ? '登录' : 'Sign In'}
             </Typography>
           </Div>
         </Div>
         <CardContent sx={{ pt: 0 }}>
           <Avatar
             alt='Remy Sharp'
-            src={getAssetPath(`${ASSET_AVATARS}/avatar10.jpg`)}
+            src={getAssetPath(`${ASSET_AVATARS}/robot_1.png`)}
             sx={{
               width: 56,
               height: 56,
@@ -86,15 +95,15 @@ export const Signin1 = () => {
           />
           <LoginForm />
           <Typography textAlign={'center'} variant={'body1'} mb={1}>
-            {`Don't have an account?`}{' '}
-            <Link underline='none' href={'/auth/signup-1'}>
-              {'Sign up now'}
+            {isZh ? '还没有账号？' : "Don't have an account?"}{' '}
+            <Link underline='none' href={`/${lang}/auth/signup-1`}>
+              {isZh ? '立即注册' : 'Sign up now'}
             </Link>
           </Typography>
         </CardContent>
       </Card>
       <Typography variant={'body1'} mb={2}>
-        {'Or sign up with'}
+        {isZh ? '或使用以下方式登录' : 'Or sign up with'}
       </Typography>
       <Stack direction='row' alignItems='center' spacing={1}>
         <IconButton

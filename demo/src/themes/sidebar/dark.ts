@@ -1,20 +1,19 @@
 import { alpha } from "@mui/material/styles";
-import { darken } from "@mui/material";
 
 export const sidebarTheme = {
   // type: "dark",
   palette: {
     primary: {
-      main: "#7352C7",
-      light: "#A67FFB",
-      dark: "#5E3BB7",
-      contrastText: "#FFF",
+      main: "#F5F5F5",
+      light: "#FFFFFF",
+      dark: "#D4D4D8",
+      contrastText: "#111111",
     },
     secondary: {
-      main: "#E44A77",
-      light: "#FF7EA6",
-      dark: "#DF295E",
-      contrastText: "#FFF",
+      main: "#A1A1AA",
+      light: "#D4D4D8",
+      dark: "#71717A",
+      contrastText: "#111111",
     },
     error: {
       main: "#E73145",
@@ -113,11 +112,11 @@ export const sidebarTheme = {
           hover: "#FFFFFF",
         },
         background: {
-          active: "#7352C7",
+          active: alpha("#FFFFFF", 0.16),
           hover: alpha("#FFFFFF", 0.15),
         },
         tick: {
-          active: darken("#7352C7", 0.25),
+          active: "#D4D4D8",
           hover: alpha("#FFFFFF", 0.25),
         },
       },

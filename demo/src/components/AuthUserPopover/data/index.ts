@@ -11,7 +11,7 @@ export type AuthUserProps = {
 export const authUser: AuthUserProps = {
   email: 'kiley.brown@example.com',
   name: 'Kiley Brown',
-  profile_pic: getAssetPath(`${ASSET_AVATARS}/avatar10.jpg`, `60x60`),
+  profile_pic: getAssetPath(`${ASSET_AVATARS}/robot_1.png`, `60x60`),
   handle: 'kiley.brown@example.com',
   job_title: 'Creative Head',
 };

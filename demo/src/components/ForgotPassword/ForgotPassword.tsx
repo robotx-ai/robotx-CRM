@@ -33,9 +33,9 @@ export const ForgotPassword = () => {
         <Link href='/' underline='none' sx={{ display: 'inline-flex' }}>
           <Image
             height={35}
-            width={110}
-            src={`${ASSET_IMAGES}/logo.png`}
-            alt='Jumbo React'
+            width={118}
+            src={`${ASSET_IMAGES}/logos/robotx_logo.webp`}
+            alt='Robotx CRM'
           />
         </Link>
       </Div>

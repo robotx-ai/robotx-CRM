@@ -42,15 +42,15 @@ export const mainTheme: ThemeOptions = {
 
   palette: {
     primary: {
-      main: '#7352C7',
-      light: '#A67FFB',
-      dark: '#5E3BB7',
+      main: '#111111',
+      light: '#4B4B4B',
+      dark: '#000000',
       contrastText: '#FFF',
     },
     secondary: {
-      main: '#E44A77',
-      light: '#FF7EA6',
-      dark: '#DF295E',
+      main: '#6B7280',
+      light: '#9CA3AF',
+      dark: '#4B5563',
       contrastText: '#FFF',
     },
     error: {
@@ -146,15 +146,15 @@ export const mainTheme: ThemeOptions = {
     JumboNavbar: {
       nav: {
         action: {
-          active: '#7352C7',
-          hover: '#7352C7',
+          active: '#111111',
+          hover: '#111111',
         },
         background: {
-          active: 'rgba(115, 82, 199, 0.15)',
+          active: 'rgba(17, 17, 17, 0.15)',
           hover: '#E9ECEF',
         },
         tick: {
-          active: '#7352C7',
+          active: '#111111',
           hover: '#ADB5BD',
         },
       },
@@ -187,7 +187,7 @@ export const mainTheme: ThemeOptions = {
       styleOverrides: {
         root: {
           borderRadius: 12,
-          boxShadow: `0 0.5rem 1.25rem rgba(115, 82, 199, 0.175)`,
+          boxShadow: `0 0.5rem 1.25rem rgba(0, 0, 0, 0.175)`,
         },
       },
     },
@@ -202,7 +202,7 @@ export const mainTheme: ThemeOptions = {
     MuiAccordion: {
       styleOverrides: {
         root: {
-          boxShadow: `0 0.5rem 1.25rem rgba(115, 82, 199, 0.175)`,
+          boxShadow: `0 0.5rem 1.25rem rgba(0, 0, 0, 0.175)`,
           ':first-of-type': {
             borderTopLeftRadius: 12,
             borderTopRightRadius: 12,

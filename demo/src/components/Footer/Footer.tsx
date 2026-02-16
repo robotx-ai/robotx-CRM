@@ -21,7 +21,7 @@ const Footer = async ({ lang: _lang }: { lang: string }) => {
         }}
       >
         <Typography variant={'body1'} color={'text.primary'}>
-          {`Copyright Company Name © ${currentYear}`}
+          {`Copyright Robotx © ${currentYear}`}
         </Typography>
       </Div>
     </Div>

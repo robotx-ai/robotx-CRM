@@ -32,10 +32,10 @@ export default async function Home(props: Params) {
           }}
         >
           <Image
-            src='/assets/images/apps/undraw_development.svg'
+            src='/assets/images/pages/welcome_landscape.png'
             alt='Robotx CRM welcome illustration'
-            width={900}
-            height={680}
+            width={1536}
+            height={1024}
             priority
             style={{ width: '100%', height: 'auto', display: 'block' }}
           />

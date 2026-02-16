@@ -39,16 +39,16 @@ export const mainTheme: ThemeOptions = {
   },
   palette: {
     primary: {
-      main: '#7352C7',
-      light: '#A67FFB',
-      dark: '#5E3BB7',
-      contrastText: '#FFF',
+      main: '#F5F5F5',
+      light: '#FFFFFF',
+      dark: '#D4D4D8',
+      contrastText: '#111111',
     },
     secondary: {
-      main: '#E44A77',
-      light: '#FF7EA6',
-      dark: '#DF295E',
-      contrastText: '#FFF',
+      main: '#A1A1AA',
+      light: '#D4D4D8',
+      dark: '#71717A',
+      contrastText: '#111111',
     },
     error: {
       main: '#E73145',

@@ -39,8 +39,6 @@ type MachineProductRow = {
   status: string;
   software_version: string | null;
   firmware_version: string | null;
-  use_type: string | null;
-  site_use: string | null;
   store_id: string | null;
 };
 
@@ -52,7 +50,6 @@ type MachineProductListResponse = {
 type AgentOption = {
   id: string;
   name: string;
-  email?: string | null;
 };
 
 type AgentOptionListResponse = {
@@ -86,15 +83,9 @@ const statusColorByCode: Record<string, 'success' | 'warning' | 'error' | 'info'
 };
 
 function formatDateTime(value: string | null): string {
-  if (!value) {
-    return '-';
-  }
-
+  if (!value) return '-';
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
+  if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString('sv-SE', { hour12: false }).replace('T', ' ');
 }
 
@@ -116,7 +107,6 @@ function getStatusLabel(status: string, isZh: boolean): string {
     if (code === 'active') return '运行中';
     return status;
   }
-
   if (code === 'maintenance') return 'Maintenance';
   if (code === 'offline') return 'Offline';
   if (code === 'idle') return 'Idle';
@@ -125,17 +115,12 @@ function getStatusLabel(status: string, isZh: boolean): string {
 }
 
 function getStatusColor(status: string): 'success' | 'warning' | 'error' | 'info' | 'default' {
-  const code = inferStatusCode(status);
-  return statusColorByCode[code] ?? 'default';
+  return statusColorByCode[inferStatusCode(status)] ?? 'default';
 }
 
 function shortId(value: string | null): string {
-  if (!value) {
-    return '-';
-  }
-  if (value.length <= 14) {
-    return value;
-  }
+  if (!value) return '-';
+  if (value.length <= 14) return value;
   return `${value.slice(0, 8)}...${value.slice(-4)}`;
 }
 
@@ -159,8 +144,6 @@ export default function MachineProductLibraryPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
   const [agentNameById, setAgentNameById] = useState<Record<string, string>>({});
 
   const loadAgentOptions = useCallback(async () => {
@@ -168,16 +151,12 @@ export default function MachineProductLibraryPage() {
       const response = await fetch('/api/v1/customerCenter/storeManagement/agents/options?limit=500', {
         cache: 'no-store',
       });
-      if (!response.ok) {
-        throw new Error(`Failed to load agents: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`Failed to load agents: ${response.status}`);
 
       const payload = (await response.json()) as AgentOptionListResponse;
       const mapping: Record<string, string> = {};
       for (const item of payload.items ?? []) {
-        if (item.id && item.name) {
-          mapping[item.id] = item.name;
-        }
+        if (item.id && item.name) mapping[item.id] = item.name;
       }
       setAgentNameById(mapping);
     } catch (error) {
@@ -208,13 +187,10 @@ export default function MachineProductLibraryPage() {
         if (softwareVersion) query.set('software_version', softwareVersion);
         if (firmwareVersion) query.set('firmware_version', firmwareVersion);
 
-        const response = await fetch(
-          `/api/v1/productCenter/machineProductLibrary?${query.toString()}`,
-          { cache: 'no-store' },
-        );
-        if (!response.ok) {
-          throw new Error(`Failed to load machine products: ${response.status}`);
-        }
+        const response = await fetch(`/api/v1/productCenter/machineProductLibrary?${query.toString()}`, {
+          cache: 'no-store',
+        });
+        if (!response.ok) throw new Error(`Failed to load machine products: ${response.status}`);
 
         const payload = (await response.json()) as MachineProductListResponse;
         setRows(payload.items ?? []);
@@ -247,96 +223,6 @@ export default function MachineProductLibraryPage() {
     setFilters(defaultFilters);
     setAppliedFilters(defaultFilters);
   }, []);
-
-  const handleAdd = useCallback(async () => {
-    const snPid = window.prompt(isZh ? '请输入 SN(PID)' : 'Please enter SN(PID)');
-    if (!snPid || !snPid.trim()) return;
-
-    const productName = window.prompt(
-      isZh ? '请输入产品名称（可选）' : 'Please enter product name (optional)',
-      '',
-    );
-    const status =
-      window.prompt(
-        isZh ? '请输入状态（例如 active/idle/offline/maintenance）' : 'Enter status',
-        'active',
-      ) || 'active';
-
-    setCreating(true);
-    try {
-      const response = await fetch('/api/v1/productCenter/machineProductLibrary', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sn_pid: snPid.trim(),
-          status: status.trim(),
-          product_name: productName?.trim() || null,
-        }),
-      });
-
-      if (!response.ok) {
-        const message = await response.text();
-        throw new Error(message || `Create failed: ${response.status}`);
-      }
-
-      void loadRows(appliedFilters, storeTab);
-    } catch (error) {
-      console.error(error);
-      window.alert(isZh ? '新增失败，请检查输入字段' : 'Create failed, please check input fields');
-    } finally {
-      setCreating(false);
-    }
-  }, [appliedFilters, isZh, loadRows, storeTab]);
-
-  const handleEdit = useCallback(
-    async (row: MachineProductRow) => {
-      const nextNickname = window.prompt(
-        isZh ? '请输入新的机器人昵称（可留空）' : 'Enter new robot nickname (optional)',
-        row.product_nickname || '',
-      );
-      if (nextNickname === null) return;
-
-      const nextUseType = window.prompt(
-        isZh ? '请输入使用类型（Purchase/Lease/Trial）' : 'Enter use type (Purchase/Lease/Trial)',
-        row.use_type || '',
-      );
-      if (nextUseType === null) return;
-
-      const payload: Record<string, string> = {};
-      if (nextNickname.trim() !== (row.product_nickname || '')) {
-        payload.product_nickname = nextNickname.trim();
-      }
-      if (nextUseType.trim() !== (row.use_type || '')) {
-        payload.use_type = nextUseType.trim();
-      }
-
-      if (Object.keys(payload).length === 0) {
-        return;
-      }
-
-      setEditingId(row.id);
-      try {
-        const response = await fetch(`/api/v1/productCenter/machineProductLibrary/${row.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) {
-          const message = await response.text();
-          throw new Error(message || `Update failed: ${response.status}`);
-        }
-
-        void loadRows(appliedFilters, storeTab);
-      } catch (error) {
-        console.error(error);
-        window.alert(isZh ? '编辑失败，请稍后重试' : 'Edit failed, please try again later');
-      } finally {
-        setEditingId(null);
-      }
-    },
-    [appliedFilters, isZh, loadRows, storeTab],
-  );
 
   const handleDelete = useCallback(
     async (row: MachineProductRow) => {
@@ -376,10 +262,12 @@ export default function MachineProductLibraryPage() {
         .sort((a, b) => a.name.localeCompare(b.name)),
     [agentNameById],
   );
+
   const softwareOptions = useMemo(
     () => Array.from(new Set(rows.map((item) => item.software_version).filter(Boolean) as string[])),
     [rows],
   );
+
   const firmwareOptions = useMemo(
     () => Array.from(new Set(rows.map((item) => item.firmware_version).filter(Boolean) as string[])),
     [rows],
@@ -433,18 +321,14 @@ export default function MachineProductLibraryPage() {
                   label={isZh ? '序列号' : 'Serial Number'}
                   placeholder={isZh ? '输入SN' : 'Enter SN'}
                   value={filters.snPid}
-                  onChange={(event) =>
-                    setFilters((prev) => ({ ...prev, snPid: event.target.value }))
-                  }
+                  onChange={(event) => setFilters((prev) => ({ ...prev, snPid: event.target.value }))}
                 />
                 <FormControl fullWidth>
                   <InputLabel>{isZh ? '状态' : 'Status'}</InputLabel>
                   <Select
                     label={isZh ? '状态' : 'Status'}
                     value={filters.status}
-                    onChange={(event) =>
-                      setFilters((prev) => ({ ...prev, status: String(event.target.value) }))
-                    }
+                    onChange={(event) => setFilters((prev) => ({ ...prev, status: String(event.target.value) }))}
                   >
                     <MenuItem value=''>{isZh ? '全部' : 'All'}</MenuItem>
                     <MenuItem value='active'>{isZh ? '运行中' : 'Active'}</MenuItem>
@@ -460,9 +344,7 @@ export default function MachineProductLibraryPage() {
                   <Select
                     label={isZh ? '代理' : 'Agent'}
                     value={filters.agentId}
-                    onChange={(event) =>
-                      setFilters((prev) => ({ ...prev, agentId: String(event.target.value) }))
-                    }
+                    onChange={(event) => setFilters((prev) => ({ ...prev, agentId: String(event.target.value) }))}
                   >
                     <MenuItem value=''>{isZh ? '全部' : 'All'}</MenuItem>
                     {agentOptions.map((option) => (
@@ -528,8 +410,12 @@ export default function MachineProductLibraryPage() {
                 <Typography variant='body2' color='text.secondary'>
                   {isZh ? `共 ${total} 条记录` : `${total} records`}
                 </Typography>
-                <Button variant='contained' onClick={() => void handleAdd()} disabled={creating}>
-                  {creating ? (isZh ? '新增中...' : 'Adding...') : isZh ? '新增产品' : 'Add Product'}
+                <Button
+                  variant='contained'
+                  component={Link}
+                  href={`/${lang}/productcenter/machine-product-library/add`}
+                >
+                  {isZh ? '新增产品' : 'Add Product'}
                 </Button>
               </Stack>
             </Stack>
@@ -604,17 +490,17 @@ export default function MachineProductLibraryPage() {
                           <Button
                             size='small'
                             component={Link}
-                            href={`/${lang}/productcenter/machine-product-library/product-info?sn=${encodeURIComponent(row.sn_pid)}`}
+                            href={`/${lang}/productcenter/machine-product-library/product-info?id=${encodeURIComponent(row.id)}&sn=${encodeURIComponent(row.sn_pid)}`}
                           >
                             {isZh ? '查看' : 'View'}
                           </Button>
                           <Button
                             size='small'
                             color='secondary'
-                            disabled={editingId === row.id}
-                            onClick={() => void handleEdit(row)}
+                            component={Link}
+                            href={`/${lang}/productcenter/machine-product-library/product-edit?id=${encodeURIComponent(row.id)}`}
                           >
-                            {editingId === row.id ? (isZh ? '编辑中...' : 'Editing...') : isZh ? '编辑' : 'Edit'}
+                            {isZh ? '编辑' : 'Edit'}
                           </Button>
                           <Button
                             size='small'

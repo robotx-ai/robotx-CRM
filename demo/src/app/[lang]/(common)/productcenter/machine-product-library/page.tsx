@@ -12,7 +12,9 @@ import {
   Divider,
   FormControl,
   InputLabel,
+  LinearProgress,
   MenuItem,
+  Skeleton,
   Select,
   Stack,
   Tab,
@@ -533,6 +535,11 @@ export default function MachineProductLibraryPage() {
                 </Button>
               </Stack>
             </Stack>
+            {loading && rows.length > 0 && (
+              <Box sx={{ mb: 2 }}>
+                <LinearProgress />
+              </Box>
+            )}
             <TableContainer>
               <Table size='small'>
                 <TableHead>
@@ -548,86 +555,108 @@ export default function MachineProductLibraryPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {rows.map((row) => (
-                    <TableRow key={row.id} hover>
-                      <TableCell>
-                        <Stack direction='row' spacing={2} alignItems='center'>
-                          <Box
-                            sx={{
-                              width: 48,
-                              height: 48,
-                              borderRadius: 2,
-                              bgcolor: 'grey.100',
-                              border: '1px solid',
-                              borderColor: 'divider',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              overflow: 'hidden',
-                              flexShrink: 0,
-                            }}
-                          >
-                            <Image
-                              src={getProductImage(row.product_name)}
-                              alt={row.product_name || row.sn_pid}
-                              width={40}
-                              height={40}
-                              style={{ objectFit: 'contain' }}
+                  {loading && rows.length === 0
+                    ? Array.from({ length: 6 }).map((_, index) => (
+                        <TableRow key={`loading-${index}`}>
+                          <TableCell colSpan={8}>
+                            <Skeleton variant='text' height={32} />
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    : rows.map((row) => (
+                        <TableRow key={row.id} hover>
+                          <TableCell>
+                            <Stack direction='row' spacing={2} alignItems='center'>
+                              <Box
+                                sx={{
+                                  width: 48,
+                                  height: 48,
+                                  borderRadius: 2,
+                                  bgcolor: 'grey.100',
+                                  border: '1px solid',
+                                  borderColor: 'divider',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  overflow: 'hidden',
+                                  flexShrink: 0,
+                                }}
+                              >
+                                <Image
+                                  src={getProductImage(row.product_name)}
+                                  alt={row.product_name || row.sn_pid}
+                                  width={40}
+                                  height={40}
+                                  style={{ objectFit: 'contain' }}
+                                />
+                              </Box>
+                              <Box>
+                                <Typography variant='body2' sx={{ fontWeight: 600 }}>
+                                  {row.product_name || '-'}
+                                </Typography>
+                                <Typography variant='caption' color='text.secondary'>
+                                  {row.product_nickname || '-'}
+                                </Typography>
+                              </Box>
+                            </Stack>
+                          </TableCell>
+                          <TableCell>{row.sn_pid}</TableCell>
+                          <TableCell>
+                            {row.agent_name ||
+                              (row.agent_id ? agentNameById[row.agent_id] : null) ||
+                              shortId(row.agent_id)}
+                          </TableCell>
+                          <TableCell>{formatDateTime(row.import_time)}</TableCell>
+                          <TableCell>
+                            <Chip
+                              label={getStatusLabel(row.status, isZh)}
+                              size='small'
+                              color={getStatusColor(row.status)}
                             />
-                          </Box>
-                          <Box>
-                            <Typography variant='body2' sx={{ fontWeight: 600 }}>
-                              {row.product_name || '-'}
-                            </Typography>
-                            <Typography variant='caption' color='text.secondary'>
-                              {row.product_nickname || '-'}
-                            </Typography>
-                          </Box>
-                        </Stack>
-                      </TableCell>
-                      <TableCell>{row.sn_pid}</TableCell>
-                      <TableCell>
-                        {row.agent_name || (row.agent_id ? agentNameById[row.agent_id] : null) || shortId(row.agent_id)}
-                      </TableCell>
-                      <TableCell>{formatDateTime(row.import_time)}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={getStatusLabel(row.status, isZh)}
-                          size='small'
-                          color={getStatusColor(row.status)}
-                        />
-                      </TableCell>
-                      <TableCell>{row.software_version || '-'}</TableCell>
-                      <TableCell>{row.firmware_version || '-'}</TableCell>
-                      <TableCell align='right'>
-                        <Stack direction='row' spacing={1} justifyContent='flex-end'>
-                          <Button
-                            size='small'
-                            component={Link}
-                            href={`/${lang}/productcenter/machine-product-library/product-info?sn=${encodeURIComponent(row.sn_pid)}`}
-                          >
-                            {isZh ? '查看' : 'View'}
-                          </Button>
-                          <Button
-                            size='small'
-                            color='secondary'
-                            disabled={editingId === row.id}
-                            onClick={() => void handleEdit(row)}
-                          >
-                            {editingId === row.id ? (isZh ? '编辑中...' : 'Editing...') : isZh ? '编辑' : 'Edit'}
-                          </Button>
-                          <Button
-                            size='small'
-                            color='error'
-                            disabled={deletingId === row.id}
-                            onClick={() => void handleDelete(row)}
-                          >
-                            {deletingId === row.id ? (isZh ? '删除中...' : 'Deleting...') : isZh ? '删除' : 'Delete'}
-                          </Button>
-                        </Stack>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                          </TableCell>
+                          <TableCell>{row.software_version || '-'}</TableCell>
+                          <TableCell>{row.firmware_version || '-'}</TableCell>
+                          <TableCell align='right'>
+                            <Stack direction='row' spacing={1} justifyContent='flex-end'>
+                              <Button
+                                size='small'
+                                component={Link}
+                                href={`/${lang}/productcenter/machine-product-library/product-info?sn=${encodeURIComponent(row.sn_pid)}`}
+                              >
+                                {isZh ? '查看' : 'View'}
+                              </Button>
+                              <Button
+                                size='small'
+                                color='secondary'
+                                disabled={editingId === row.id}
+                                onClick={() => void handleEdit(row)}
+                              >
+                                {editingId === row.id
+                                  ? isZh
+                                    ? '编辑中...'
+                                    : 'Editing...'
+                                  : isZh
+                                    ? '编辑'
+                                    : 'Edit'}
+                              </Button>
+                              <Button
+                                size='small'
+                                color='error'
+                                disabled={deletingId === row.id}
+                                onClick={() => void handleDelete(row)}
+                              >
+                                {deletingId === row.id
+                                  ? isZh
+                                    ? '删除中...'
+                                    : 'Deleting...'
+                                  : isZh
+                                    ? '删除'
+                                    : 'Delete'}
+                              </Button>
+                            </Stack>
+                          </TableCell>
+                        </TableRow>
+                      ))}
 
                   {!loading && rows.length === 0 && (
                     <TableRow>

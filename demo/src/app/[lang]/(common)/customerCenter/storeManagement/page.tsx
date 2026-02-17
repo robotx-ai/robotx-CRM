@@ -10,8 +10,10 @@ import {
   Chip,
   Divider,
   IconButton,
+  LinearProgress,
   Link as MuiLink,
   MenuItem,
+  Skeleton,
   Stack,
   Table,
   TableBody,
@@ -358,6 +360,11 @@ export default function StoreManagementPage() {
                 {isZh ? `共 ${total} 条记录` : `${total} records`}
               </Typography>
             </Stack>
+            {loading && rows.length > 0 && (
+              <Box sx={{ mb: 2 }}>
+                <LinearProgress />
+              </Box>
+            )}
             <TableContainer>
               <Table size='small'>
                 <TableHead>
@@ -386,60 +393,68 @@ export default function StoreManagementPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {rows.map((row) => (
-                    <TableRow key={row.store_id} hover>
-                      <TableCell>{row.client_count}</TableCell>
-                      <TableCell>{row.store_name ?? row.storeName ?? '-'}</TableCell>
-                      <TableCell>{row.agent_company_name ?? '-'}</TableCell>
-                      <TableCell>{row.proxy_account ?? '-'}</TableCell>
-                      <TableCell>{row.company_location ?? '-'}</TableCell>
-                      <TableCell>{row.sales_area ?? '-'}</TableCell>
-                      <TableCell>{row.store_count}</TableCell>
-                      <TableCell>{row.binding_count}</TableCell>
-                      <TableCell>{row.superior_agent_name ?? '-'}</TableCell>
-                      <TableCell>{formatDateTime(row.created_at)}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={getStatusLabel(row.status, isZh)}
-                          size='small'
-                          color={statusColorByCode[row.status]}
-                        />
-                      </TableCell>
-                      <TableCell align='right'>
-                        <Stack direction='row' spacing={1} justifyContent='flex-end'>
-                          <Button
-                            size='small'
-                            component={Link}
-                            href={`/${lang}/customerCenter/storeManagement/view?id=${encodeURIComponent(row.authorization_code ?? row.store_id)}&name=${encodeURIComponent(row.store_name ?? row.storeName ?? '')}`}
-                          >
-                            {isZh ? '查看' : 'View'}
-                          </Button>
-                          <Button size='small' color='secondary'>
-                            {isZh ? '编辑' : 'Edit'}
-                          </Button>
-                          <Button
-                            size='small'
-                            color='error'
-                            disabled={deletingId === row.store_id}
-                            onClick={() =>
-                              void handleDelete(
-                                row.store_id,
-                                row.store_name ?? row.storeName ?? row.store_id,
-                              )
-                            }
-                          >
-                            {deletingId === row.store_id
-                              ? isZh
-                                ? '删除中...'
-                                : 'Deleting...'
-                              : isZh
-                                ? '删除门店'
-                                : 'Delete Store'}
-                          </Button>
-                        </Stack>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {loading && rows.length === 0
+                    ? Array.from({ length: 6 }).map((_, index) => (
+                        <TableRow key={`loading-${index}`}>
+                          <TableCell colSpan={12}>
+                            <Skeleton variant='text' height={32} />
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    : rows.map((row) => (
+                        <TableRow key={row.store_id} hover>
+                          <TableCell>{row.client_count}</TableCell>
+                          <TableCell>{row.store_name ?? row.storeName ?? '-'}</TableCell>
+                          <TableCell>{row.agent_company_name ?? '-'}</TableCell>
+                          <TableCell>{row.proxy_account ?? '-'}</TableCell>
+                          <TableCell>{row.company_location ?? '-'}</TableCell>
+                          <TableCell>{row.sales_area ?? '-'}</TableCell>
+                          <TableCell>{row.store_count}</TableCell>
+                          <TableCell>{row.binding_count}</TableCell>
+                          <TableCell>{row.superior_agent_name ?? '-'}</TableCell>
+                          <TableCell>{formatDateTime(row.created_at)}</TableCell>
+                          <TableCell>
+                            <Chip
+                              label={getStatusLabel(row.status, isZh)}
+                              size='small'
+                              color={statusColorByCode[row.status]}
+                            />
+                          </TableCell>
+                          <TableCell align='right'>
+                            <Stack direction='row' spacing={1} justifyContent='flex-end'>
+                              <Button
+                                size='small'
+                                component={Link}
+                                href={`/${lang}/customerCenter/storeManagement/view?id=${encodeURIComponent(row.authorization_code ?? row.store_id)}&name=${encodeURIComponent(row.store_name ?? row.storeName ?? '')}`}
+                              >
+                                {isZh ? '查看' : 'View'}
+                              </Button>
+                              <Button size='small' color='secondary'>
+                                {isZh ? '编辑' : 'Edit'}
+                              </Button>
+                              <Button
+                                size='small'
+                                color='error'
+                                disabled={deletingId === row.store_id}
+                                onClick={() =>
+                                  void handleDelete(
+                                    row.store_id,
+                                    row.store_name ?? row.storeName ?? row.store_id,
+                                  )
+                                }
+                              >
+                                {deletingId === row.store_id
+                                  ? isZh
+                                    ? '删除中...'
+                                    : 'Deleting...'
+                                  : isZh
+                                    ? '删除门店'
+                                    : 'Delete Store'}
+                              </Button>
+                            </Stack>
+                          </TableCell>
+                        </TableRow>
+                      ))}
                   {!loading && rows.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={12} align='center'>

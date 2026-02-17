@@ -146,7 +146,6 @@ export default function MachineProductLibraryPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [agentNameById, setAgentNameById] = useState<Record<string, string>>({});
 
   const loadAgentOptions = useCallback(async () => {
@@ -226,54 +225,6 @@ export default function MachineProductLibraryPage() {
     setFilters(defaultFilters);
     setAppliedFilters(defaultFilters);
   }, []);
-
-  const handleEdit = useCallback(
-    async (row: MachineProductRow) => {
-      const nextNickname = window.prompt(
-        isZh ? '请输入新的机器人昵称（可留空）' : 'Enter new robot nickname (optional)',
-        row.product_nickname || '',
-      );
-      if (nextNickname === null) return;
-
-      const nextUseType = window.prompt(
-        isZh ? '请输入使用类型（Purchase/Lease/Trial）' : 'Enter use type (Purchase/Lease/Trial)',
-        row.use_type || '',
-      );
-      if (nextUseType === null) return;
-
-      const payload: Record<string, string> = {};
-      if (nextNickname.trim() !== (row.product_nickname || '')) {
-        payload.product_nickname = nextNickname.trim();
-      }
-      if (nextUseType.trim() !== (row.use_type || '')) {
-        payload.use_type = nextUseType.trim();
-      }
-
-      if (Object.keys(payload).length === 0) return;
-
-      setEditingId(row.id);
-      try {
-        const response = await fetch(`/api/v1/productCenter/machineProductLibrary/${row.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) {
-          const message = await response.text();
-          throw new Error(message || `Update failed: ${response.status}`);
-        }
-
-        void loadRows(appliedFilters, storeTab);
-      } catch (error) {
-        console.error(error);
-        window.alert(isZh ? '编辑失败，请稍后重试' : 'Edit failed, please try again later');
-      } finally {
-        setEditingId(null);
-      }
-    },
-    [appliedFilters, isZh, loadRows, storeTab],
-  );
 
   const handleDelete = useCallback(
     async (row: MachineProductRow) => {
@@ -563,16 +514,10 @@ export default function MachineProductLibraryPage() {
                               <Button
                                 size='small'
                                 color='secondary'
-                                disabled={editingId === row.id}
-                                onClick={() => void handleEdit(row)}
+                                component={Link}
+                                href={`/${lang}/productcenter/machine-product-library/product-edit?id=${encodeURIComponent(row.id)}`}
                               >
-                                {editingId === row.id
-                                  ? isZh
-                                    ? '编辑中...'
-                                    : 'Editing...'
-                                  : isZh
-                                    ? '编辑'
-                                    : 'Edit'}
+                                {isZh ? '编辑' : 'Edit'}
                               </Button>
                               <Button
                                 size='small'

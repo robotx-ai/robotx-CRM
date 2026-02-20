@@ -2,9 +2,26 @@
 import { JumboDdMenu } from '@jumbo/components/JumboDdMenu';
 import Avatar from '@mui/material/Avatar';
 import { FeaturedCard3 } from '../FeaturedCard3';
+import { defaultScheduleData, type ScheduleDataObject } from './data';
 import { ScheduleList } from './ScheduleList';
 
-function ScheduleCard() {
+type ScheduleCardProps = {
+  title?: string;
+  subheader?: string;
+  avatarLabel?: string | number;
+  listHeading?: string;
+  emptyText?: string;
+  items?: ScheduleDataObject[];
+};
+
+function ScheduleCard({
+  title = 'Monday',
+  subheader = 'December 2023',
+  avatarLabel = 28,
+  listHeading = "Today's schedule",
+  emptyText = 'No items',
+  items = defaultScheduleData,
+}: ScheduleCardProps) {
   return (
     <FeaturedCard3
       bgcolor={['#843CF6', '#38B8F2']}
@@ -26,18 +43,18 @@ function ScheduleCard() {
             margin: '0 auto 16px',
           }}
         >
-          28
+          {avatarLabel}
         </Avatar>
       }
-      title='Monday'
-      subheader='December 2023'
+      title={title}
+      subheader={subheader}
       headerSx={{ pt: 0, mt: -0.5 }}
       contentSx={{
         textAlign: 'left',
         bgcolor: (theme) => theme.palette.background.paper,
       }}
     >
-      <ScheduleList />
+      <ScheduleList heading={listHeading} emptyText={emptyText} items={items} />
     </FeaturedCard3>
   );
 }

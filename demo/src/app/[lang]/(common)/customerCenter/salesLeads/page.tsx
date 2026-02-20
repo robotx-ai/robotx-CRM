@@ -297,7 +297,7 @@ export default function SalesLeadsManagementPage() {
         setHideLostLeads(false);
       }
 
-      const nextFilters = {
+      const nextFilters: LeadFilters = {
         ...filters,
         status: filters.status === status ? '' : status,
       };

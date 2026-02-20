@@ -1,12 +1,12 @@
 import React from 'react';
 interface ScheduleDataObject {
-  id: number;
+  id: number | string;
   title: string;
   subTitle?: string;
   color?: string;
   icon?: React.ReactNode;
 }
-export const scheduleData: ScheduleDataObject[] = [
+export const defaultScheduleData: ScheduleDataObject[] = [
   {
     id: 1,
     title: 'After effect learning',

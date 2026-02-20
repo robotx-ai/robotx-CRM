@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const DEFAULT_BACKEND_ORIGIN = 'http://127.0.0.1:8000';
 const backendOrigin =
-  process.env.ROBOTX_CRM_API_ORIGIN?.replace(/\/$/, '') || DEFAULT_BACKEND_ORIGIN;
+  process.env.ROBOTX_CRM_API_ORIGIN?.replace(/\/$/, '') ||
+  DEFAULT_BACKEND_ORIGIN;
 
 function buildTargetUrl(path: string, req: NextRequest): string {
   const target = new URL(path, backendOrigin);
@@ -12,7 +13,15 @@ function buildTargetUrl(path: string, req: NextRequest): string {
   return target.toString();
 }
 
-export async function proxyToBackend(path: string, req: NextRequest) {
+type ProxyToBackendOptions = {
+  extraHeaders?: HeadersInit;
+};
+
+export async function proxyToBackend(
+  path: string,
+  req: NextRequest,
+  options?: ProxyToBackendOptions
+) {
   const targetUrl = buildTargetUrl(path, req);
   const method = req.method;
 
@@ -20,6 +29,12 @@ export async function proxyToBackend(path: string, req: NextRequest) {
   const incomingContentType = req.headers.get('content-type');
   if (incomingContentType) {
     headers.set('content-type', incomingContentType);
+  }
+  if (options?.extraHeaders) {
+    const extraHeaders = new Headers(options.extraHeaders);
+    extraHeaders.forEach((value, key) => {
+      headers.set(key, value);
+    });
   }
 
   const init: RequestInit = {
@@ -41,7 +56,7 @@ export async function proxyToBackend(path: string, req: NextRequest) {
         detail: 'Failed to reach robotx-CRM-api backend',
         error: error instanceof Error ? error.message : 'Unknown fetch error',
       },
-      { status: 502 },
+      { status: 502 }
     );
   }
 

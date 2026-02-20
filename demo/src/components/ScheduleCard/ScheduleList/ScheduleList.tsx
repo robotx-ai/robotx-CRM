@@ -1,14 +1,24 @@
 import Timeline from '@mui/lab/Timeline';
 import { Typography } from '@mui/material';
 import React from 'react';
-import { scheduleData } from '../data';
+import { defaultScheduleData, type ScheduleDataObject } from '../data';
 import { ScheduleItem } from '../ScheduleItem';
 
-const ScheduleList = () => {
+type ScheduleListProps = {
+  heading?: string;
+  emptyText?: string;
+  items?: ScheduleDataObject[];
+};
+
+const ScheduleList = ({
+  heading = "Today's schedule",
+  emptyText = 'No items',
+  items = defaultScheduleData,
+}: ScheduleListProps) => {
   return (
     <React.Fragment>
       <Typography variant={'h5'} color={'text.secondary'} mb={2}>
-        {`Today's schedule`}
+        {heading}
       </Typography>
       <Timeline
         sx={{
@@ -16,9 +26,15 @@ const ScheduleList = () => {
           p: 0,
         }}
       >
-        {scheduleData.map((schedule, index) => {
-          return <ScheduleItem item={schedule} key={index} />;
-        })}
+        {items.length > 0 ? (
+          items.map((schedule) => {
+            return <ScheduleItem item={schedule} key={schedule.id} />;
+          })
+        ) : (
+          <Typography variant={'body2'} color={'text.secondary'}>
+            {emptyText}
+          </Typography>
+        )}
       </Timeline>
     </React.Fragment>
   );

@@ -58,6 +58,11 @@ export async function getMenus(locale: string) {
           },
         ],
       },
+      {
+        path: 'https://roi.robotxtech.com/',
+        label: 'ROI Calculator',
+        icon: 'listing',
+      },
     ];
   }
 
@@ -115,6 +120,11 @@ export async function getMenus(locale: string) {
           label: '方案与计费',
         },
       ],
+    },
+    {
+      path: 'https://roi.robotxtech.com/',
+      label: 'ROI 计算器',
+      icon: 'listing',
     },
   ];
 }

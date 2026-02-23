@@ -4,15 +4,12 @@ import { Link } from '@/components/NextLink';
 import { ASSET_IMAGES } from '@/utilities/constants/paths';
 import { getAssetPath } from '@/utilities/helpers';
 import { Div } from '@jumbo/shared';
-import { Facebook, Google, Twitter } from '@mui/icons-material';
 import {
   Card,
   CardContent,
-  IconButton,
   Typography,
   alpha,
 } from '@mui/material';
-import Stack from '@mui/material/Stack';
 import Image from 'next/image';
 import React from 'react';
 
@@ -108,50 +105,6 @@ export const Signin2 = () => {
                 {'Sign up now'}
               </Link>
             </Typography>
-            <Stack direction='row' alignItems='center' spacing={1} mb={1}>
-              <IconButton
-                sx={{
-                  bgcolor: '#385196',
-                  color: 'common.white',
-                  p: (theme) => theme.spacing(1.25),
-
-                  '&:hover': {
-                    backgroundColor: '#385196',
-                  },
-                }}
-                aria-label='Facebook'
-              >
-                <Facebook fontSize='small' />
-              </IconButton>
-              <IconButton
-                sx={{
-                  bgcolor: '#00a8ff',
-                  color: 'common.white',
-                  p: (theme) => theme.spacing(1.25),
-
-                  '&:hover': {
-                    backgroundColor: '#00a8ff',
-                  },
-                }}
-                aria-label='Twitter'
-              >
-                <Twitter fontSize='small' />
-              </IconButton>
-              <IconButton
-                sx={{
-                  bgcolor: '#23272b',
-                  color: 'common.white',
-                  p: (theme) => theme.spacing(1.25),
-
-                  '&:hover': {
-                    backgroundColor: '#23272b',
-                  },
-                }}
-                aria-label='Twitter'
-              >
-                <Google fontSize='small' />
-              </IconButton>
-            </Stack>
           </React.Fragment>
         </CardContent>
       </Card>

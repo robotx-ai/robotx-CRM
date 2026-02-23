@@ -18,13 +18,67 @@ import {
 import { signOut } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import React from 'react';
-import { authUser } from './data';
+import { FALLBACK_AUTH_USER } from './data';
 
 const supportedLocales = ['en-US', 'ar-SA', 'es-ES', 'fr-FR', 'it-IT', 'zh-CN'];
+
+type SessionUser = {
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+};
+
+type SessionPayload = {
+  user?: SessionUser | null;
+};
 
 const AuthUserPopover = () => {
   const { theme } = useJumboTheme();
   const pathname = usePathname();
+  const [displayUser, setDisplayUser] = React.useState(FALLBACK_AUTH_USER);
+
+  React.useEffect(() => {
+    let active = true;
+
+    const resolveSessionUser = async () => {
+      try {
+        const response = await fetch('/api/auth/session', { cache: 'no-store' });
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = (await response.json()) as SessionPayload | null;
+        const sessionUser = payload?.user;
+
+        const email = sessionUser?.email?.trim() || '';
+        const fallbackNameFromEmail = email.includes('@')
+          ? email.split('@')[0]
+          : '';
+        const name = sessionUser?.name?.trim() || fallbackNameFromEmail || 'User';
+        const image = sessionUser?.image?.trim() || FALLBACK_AUTH_USER.profile_pic;
+
+        if (!active) {
+          return;
+        }
+
+        setDisplayUser({
+          ...FALLBACK_AUTH_USER,
+          email,
+          handle: email,
+          name,
+          profile_pic: image,
+        });
+      } catch {
+        // Keep fallback identity on fetch/session parsing failures.
+      }
+    };
+
+    void resolveSessionUser();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const logout = React.useCallback(() => {
     (async () => {
@@ -45,7 +99,7 @@ const AuthUserPopover = () => {
       <JumboDdPopover
         triggerButton={
           <Avatar
-            src={authUser?.profile_pic}
+            src={displayUser.profile_pic}
             sizes={'small'}
             sx={{ boxShadow: 23, cursor: 'pointer' }}
           />
@@ -61,13 +115,13 @@ const AuthUserPopover = () => {
           }}
         >
           <Avatar
-            src={authUser?.profile_pic}
-            alt={authUser.name}
+            src={displayUser.profile_pic}
+            alt={displayUser.name}
             sx={{ width: 60, height: 60, mb: 2 }}
           />
-          <Typography variant={'h5'}>{authUser.name}</Typography>
+          <Typography variant={'h5'}>{displayUser.name}</Typography>
           <Typography variant={'body1'} color='text.secondary'>
-            {authUser.handle}
+            {displayUser.handle}
           </Typography>
         </Div>
         <Divider />

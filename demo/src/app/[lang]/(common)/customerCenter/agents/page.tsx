@@ -3,12 +3,14 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
+  Alert,
   Box,
   Breadcrumbs,
   Button,
   Card,
   CardContent,
   Chip,
+  CircularProgress,
   Divider,
   MenuItem,
   Stack,
@@ -22,19 +24,52 @@ import {
   Typography,
   Link as MuiLink,
 } from '@mui/material';
-import { useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-const statusColors: Record<string, 'success' | 'warning' | 'error' | 'info' | 'default'> = {
-  Active: 'success',
-  Pending: 'warning',
-  Inactive: 'default',
+type RowStatus = 'active' | 'pending' | 'inactive';
+
+type SubordinateAgentItem = {
+  agent_id: string;
+  agent_company_name: string;
+  proxy_account: string | null;
+  client_count: number;
+  company_location: string | null;
+  sales_area: string | null;
+  store_count: number;
+  binding_count: number;
+  superior_agent_name: string | null;
+  created_at: string | null;
+  status: RowStatus;
 };
 
-const statusColorsZh: Record<string, 'success' | 'warning' | 'error' | 'info' | 'default'> = {
-  启用: 'success',
-  待审核: 'warning',
-  停用: 'default',
+type ApiResponse = {
+  total: number;
+  items: SubordinateAgentItem[];
 };
+
+const statusColors: Record<RowStatus, 'success' | 'warning' | 'default'> = {
+  active: 'success',
+  pending: 'warning',
+  inactive: 'default',
+};
+
+function toStatusLabel(status: RowStatus, isZh: boolean): string {
+  if (isZh) {
+    if (status === 'active') return '启用';
+    if (status === 'pending') return '待审核';
+    return '停用';
+  }
+  if (status === 'active') return 'Active';
+  if (status === 'pending') return 'Pending';
+  return 'Inactive';
+}
+
+function formatTime(value: string | null): string {
+  if (!value) return '-';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '-';
+  return d.toLocaleString('sv-SE', { hour12: false }).replace('T', ' ');
+}
 
 export default function SubordinateAgentManagementPage() {
   const params = useParams();
@@ -42,85 +77,56 @@ export default function SubordinateAgentManagementPage() {
   const lang = Array.isArray(langParam) ? langParam[0] : langParam ?? 'en-US';
   const isZh = lang === 'zh-CN';
 
-  const rows = useMemo(
-    () =>
-      isZh
-        ? [
-            {
-              clientCount: 84,
-              company: '深圳智控科技',
-              account: 'sz_control',
-              location: '中国 · 深圳',
-              area: '华南',
-              storeCount: 22,
-              bindingCount: 71,
-              superior: '普渡科技',
-              createdAt: '2026-01-15 11:20',
-              status: '启用',
-            },
-            {
-              clientCount: 39,
-              company: '星河服务',
-              account: 'galaxy_ops',
-              location: '中国 · 杭州',
-              area: '华东',
-              storeCount: 9,
-              bindingCount: 18,
-              superior: '普渡科技',
-              createdAt: '2026-01-19 09:45',
-              status: '待审核',
-            },
-            {
-              clientCount: 16,
-              company: '北极星机器人',
-              account: 'polaris_team',
-              location: '中国 · 北京',
-              area: '华北',
-              storeCount: 6,
-              bindingCount: 10,
-              superior: '普渡科技',
-              createdAt: '2025-12-29 15:12',
-              status: '停用',
-            },
-          ]
-        : [
-            {
-              clientCount: 84,
-              company: 'Shenzhen Control Tech',
-              account: 'sz_control',
-              location: 'China · Shenzhen',
-              area: 'South China',
-              storeCount: 22,
-              bindingCount: 71,
-              superior: 'Pudu Technology',
-              createdAt: '2026-01-15 11:20',
-              status: 'Active',
-            },
-            {
-              clientCount: 39,
-              company: 'Galaxy Service',
-              account: 'galaxy_ops',
-              location: 'China · Hangzhou',
-              area: 'East China',
-              storeCount: 9,
-              bindingCount: 18,
-              superior: 'Pudu Technology',
-              createdAt: '2026-01-19 09:45',
-              status: 'Pending',
-            },
-            {
-              clientCount: 16,
-              company: 'Polaris Robotics',
-              account: 'polaris_team',
-              location: 'China · Beijing',
-              area: 'North China',
-              storeCount: 6,
-              bindingCount: 10,
-              superior: 'Pudu Technology',
-              createdAt: '2025-12-29 15:12',
-              status: 'Inactive',
-            },
-          ],
+  const [keywordInput, setKeywordInput] = useState('');
+  const [keyword, setKeyword] = useState('');
+  const [status, setStatus] = useState('');
+  const [rows, setRows] = useState<SubordinateAgentItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchRows = useCallback(async () => {
+    const query = new URLSearchParams();
+    query.set('limit', '200');
+    if (keyword.trim()) query.set('keyword', keyword.trim());
+    if (status) query.set('status', status);
+
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/v1/customerCenter/agents?${query.toString()}`, {
+        method: 'GET',
+        cache: 'no-store',
+      });
+      if (!res.ok) {
+        let detail = `Failed to fetch agents (${res.status})`;
+        try {
+          const payload = (await res.json()) as { detail?: string };
+          if (payload?.detail) detail = payload.detail;
+        } catch {
+          // ignore response parse error and keep default message
+        }
+        throw new Error(detail);
+      }
+
+      const payload = (await res.json()) as ApiResponse;
+      setRows(Array.isArray(payload.items) ? payload.items : []);
+      setTotal(typeof payload.total === 'number' ? payload.total : 0);
+    } catch (err) {
+      setRows([]);
+      setTotal(0);
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  }, [keyword, status]);
+
+  useEffect(() => {
+    void fetchRows();
+  }, [fetchRows]);
+
+  const noRowsText = useMemo(
+    () => (isZh ? '暂无下级代理数据' : 'No subordinate agents yet'),
     [isZh]
   );
 
@@ -157,9 +163,6 @@ export default function SubordinateAgentManagementPage() {
                   : 'Manage subordinate agents and review store bindings.'}
               </Typography>
             </Box>
-            <Button variant='contained'>
-              {isZh ? '新增' : 'Add'}
-            </Button>
           </Stack>
         </Stack>
 
@@ -172,51 +175,42 @@ export default function SubordinateAgentManagementPage() {
                   fullWidth
                   label={isZh ? '代理名称 / 账号' : 'Agency Name / Account'}
                   placeholder={isZh ? '输入代理名称或账号' : 'Type name or account'}
+                  value={keywordInput}
+                  onChange={(event) => setKeywordInput(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      setKeyword(keywordInput);
+                    }
+                  }}
                 />
-                <TextField
-                  fullWidth
-                  label={isZh ? '代理客户数' : 'Client Number by Proxy'}
-                  placeholder={isZh ? '输入客户数' : 'Enter client count'}
-                />
-                <TextField
-                  fullWidth
-                  label={isZh ? '公司所在地' : 'Company location'}
-                  placeholder={isZh ? '输入城市 / 国家' : 'Type city or country'}
-                />
-                <TextField
-                  fullWidth
-                  label={isZh ? '创建时间' : 'Creation Time'}
-                  placeholder={isZh ? 'YYYY-MM-DD' : 'YYYY-MM-DD'}
-                />
-              </Stack>
-              <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                 <TextField
                   select
                   fullWidth
                   label={isZh ? '状态' : 'Status'}
-                  defaultValue=''
+                  value={status}
+                  onChange={(event) => setStatus(event.target.value)}
                 >
                   <MenuItem value=''>{isZh ? '全部' : 'All'}</MenuItem>
                   <MenuItem value='active'>{isZh ? '启用' : 'Active'}</MenuItem>
                   <MenuItem value='pending'>{isZh ? '待审核' : 'Pending'}</MenuItem>
                   <MenuItem value='inactive'>{isZh ? '停用' : 'Inactive'}</MenuItem>
                 </TextField>
-                <TextField
-                  select
-                  fullWidth
-                  label={isZh ? '销售区域' : 'Sales Area'}
-                  defaultValue=''
-                >
-                  <MenuItem value=''>{isZh ? '全部' : 'All'}</MenuItem>
-                  <MenuItem value='cn-south'>{isZh ? '华南' : 'South China'}</MenuItem>
-                  <MenuItem value='cn-east'>{isZh ? '华东' : 'East China'}</MenuItem>
-                  <MenuItem value='cn-north'>{isZh ? '华北' : 'North China'}</MenuItem>
-                </TextField>
               </Stack>
               <Divider />
               <Stack direction='row' spacing={2} justifyContent='flex-end'>
-                <Button variant='outlined'>{isZh ? '重置' : 'Reset'}</Button>
-                <Button variant='contained'>{isZh ? '搜索' : 'Search'}</Button>
+                <Button
+                  variant='outlined'
+                  onClick={() => {
+                    setKeywordInput('');
+                    setKeyword('');
+                    setStatus('');
+                  }}
+                >
+                  {isZh ? '重置' : 'Reset'}
+                </Button>
+                <Button variant='contained' onClick={() => setKeyword(keywordInput)}>
+                  {isZh ? '搜索' : 'Search'}
+                </Button>
               </Stack>
             </Stack>
           </CardContent>
@@ -225,13 +219,14 @@ export default function SubordinateAgentManagementPage() {
         <Card>
           <CardContent>
             <Stack direction='row' justifyContent='space-between' sx={{ mb: 2 }}>
-              <Typography variant='h6'>
-                {isZh ? '代理列表' : 'Agent List'}
-              </Typography>
+              <Typography variant='h6'>{isZh ? '代理列表' : 'Agent List'}</Typography>
               <Typography variant='body2' color='text.secondary'>
-                {isZh ? '共 3 条记录' : '3 records'}
+                {isZh ? `共 ${total} 条记录` : `${total} records`}
               </Typography>
             </Stack>
+
+            {error ? <Alert severity='error'>{error}</Alert> : null}
+
             <TableContainer>
               <Table size='small'>
                 <TableHead>
@@ -244,44 +239,54 @@ export default function SubordinateAgentManagementPage() {
                     <TableCell>
                       {isZh ? '拓展门店数' : 'Expanding the number of stores'}
                     </TableCell>
-                    <TableCell>
-                      {isZh ? '激活绑定数' : 'Activation Binding Number'}
-                    </TableCell>
+                    <TableCell>{isZh ? '激活绑定数' : 'Activation Binding Number'}</TableCell>
                     <TableCell>{isZh ? '上级代理名称' : 'Superior Agent Name'}</TableCell>
                     <TableCell>{isZh ? '创建时间' : 'Creation Time'}</TableCell>
                     <TableCell>{isZh ? '状态' : 'Status'}</TableCell>
-                    <TableCell align='right'>{isZh ? '操作' : 'Operation'}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {rows.map((row) => (
-                    <TableRow key={row.account} hover>
-                      <TableCell>{row.clientCount}</TableCell>
-                      <TableCell>{row.company}</TableCell>
-                      <TableCell>{row.account}</TableCell>
-                      <TableCell>{row.location}</TableCell>
-                      <TableCell>{row.area}</TableCell>
-                      <TableCell>{row.storeCount}</TableCell>
-                      <TableCell>{row.bindingCount}</TableCell>
-                      <TableCell>{row.superior}</TableCell>
-                      <TableCell>{row.createdAt}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={row.status}
-                          size='small'
-                          color={isZh ? statusColorsZh[row.status] : statusColors[row.status]}
-                        />
-                      </TableCell>
-                      <TableCell align='right'>
-                        <Stack direction='row' spacing={1} justifyContent='flex-end'>
-                          <Button size='small'>{isZh ? '查看' : 'View'}</Button>
-                          <Button size='small' color='secondary'>
-                            {isZh ? '编辑' : 'Edit'}
-                          </Button>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={10}>
+                        <Stack direction='row' spacing={1} alignItems='center'>
+                          <CircularProgress size={18} />
+                          <Typography variant='body2' color='text.secondary'>
+                            {isZh ? '加载中...' : 'Loading...'}
+                          </Typography>
                         </Stack>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : rows.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={10}>
+                        <Typography variant='body2' color='text.secondary'>
+                          {noRowsText}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    rows.map((row) => (
+                      <TableRow key={row.agent_id} hover>
+                        <TableCell>{row.client_count}</TableCell>
+                        <TableCell>{row.agent_company_name}</TableCell>
+                        <TableCell>{row.proxy_account || '-'}</TableCell>
+                        <TableCell>{row.company_location || '-'}</TableCell>
+                        <TableCell>{row.sales_area || '-'}</TableCell>
+                        <TableCell>{row.store_count}</TableCell>
+                        <TableCell>{row.binding_count}</TableCell>
+                        <TableCell>{row.superior_agent_name || '-'}</TableCell>
+                        <TableCell>{formatTime(row.created_at)}</TableCell>
+                        <TableCell>
+                          <Chip
+                            label={toStatusLabel(row.status, isZh)}
+                            size='small'
+                            color={statusColors[row.status]}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>

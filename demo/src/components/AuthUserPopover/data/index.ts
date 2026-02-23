@@ -8,10 +8,11 @@ export type AuthUserProps = {
   handle: string;
   job_title: string;
 };
-export const authUser: AuthUserProps = {
-  email: 'kiley.brown@example.com',
-  name: 'Kiley Brown',
+
+export const FALLBACK_AUTH_USER: AuthUserProps = {
+  email: '',
+  name: 'User',
   profile_pic: getAssetPath(`${ASSET_AVATARS}/robot_1.png`, `60x60`),
-  handle: 'kiley.brown@example.com',
-  job_title: 'Creative Head',
+  handle: '',
+  job_title: '',
 };

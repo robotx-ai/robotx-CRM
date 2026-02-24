@@ -10,8 +10,10 @@ import {
   Chip,
   Divider,
   IconButton,
+  LinearProgress,
   Link as MuiLink,
   MenuItem,
+  Skeleton,
   Stack,
   Table,
   TableBody,
@@ -49,6 +51,22 @@ type StoreManagementRow = {
 type StoreManagementListResponse = {
   total: number;
   items: StoreManagementRow[];
+};
+
+type StoreFilters = {
+  agentNameOrAccount: string;
+  clientCount: string;
+  companyLocation: string;
+  creationTime: string;
+  status: '' | StoreStatus;
+};
+
+const defaultFilters: StoreFilters = {
+  agentNameOrAccount: '',
+  clientCount: '',
+  companyLocation: '',
+  creationTime: '',
+  status: '',
 };
 
 const statusColorByCode: Record<StoreStatus, 'success' | 'warning' | 'default'> = {
@@ -92,11 +110,39 @@ export default function StoreManagementPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [filters, setFilters] = useState<StoreFilters>(defaultFilters);
 
-  const loadStores = useCallback(async () => {
+  const loadStores = useCallback(async (nextFilters: StoreFilters) => {
     setLoading(true);
     try {
-      const response = await fetch('/api/v1/customerCenter/storeManagement?limit=200', {
+      const query = new URLSearchParams();
+      query.set('limit', '200');
+
+      const agentNameOrAccount = nextFilters.agentNameOrAccount.trim();
+      const companyLocation = nextFilters.companyLocation.trim();
+      const creationTime = nextFilters.creationTime.trim();
+      const clientCount = nextFilters.clientCount.trim();
+
+      if (agentNameOrAccount) {
+        query.set('agent_name_or_account', agentNameOrAccount);
+      }
+      if (companyLocation) {
+        query.set('company_location', companyLocation);
+      }
+      if (creationTime) {
+        query.set('creation_time', creationTime);
+      }
+      if (nextFilters.status) {
+        query.set('status', nextFilters.status);
+      }
+      if (clientCount) {
+        const parsed = Number.parseInt(clientCount, 10);
+        if (!Number.isNaN(parsed) && parsed >= 0) {
+          query.set('client_count', String(parsed));
+        }
+      }
+
+      const response = await fetch(`/api/v1/customerCenter/storeManagement?${query.toString()}`, {
         cache: 'no-store',
       });
       if (!response.ok) {
@@ -117,7 +163,16 @@ export default function StoreManagementPage() {
   }, [isZh]);
 
   useEffect(() => {
-    void loadStores();
+    void loadStores(defaultFilters);
+  }, [loadStores]);
+
+  const handleSearch = useCallback(() => {
+    void loadStores(filters);
+  }, [filters, loadStores]);
+
+  const handleReset = useCallback(() => {
+    setFilters(defaultFilters);
+    void loadStores(defaultFilters);
   }, [loadStores]);
 
   const handleDelete = useCallback(
@@ -141,7 +196,7 @@ export default function StoreManagementPage() {
           throw new Error(`Delete failed: ${response.status}`);
         }
 
-        await loadStores();
+        await loadStores(filters);
       } catch (error) {
         console.error(error);
         window.alert(isZh ? '删除失败，请稍后重试' : 'Delete failed, please try again later');
@@ -149,7 +204,7 @@ export default function StoreManagementPage() {
         setDeletingId(null);
       }
     },
-    [isZh, loadStores],
+    [filters, isZh, loadStores],
   );
 
   const statusTip = useMemo(
@@ -232,41 +287,66 @@ export default function StoreManagementPage() {
                   fullWidth
                   label={isZh ? '代理名称 / 账号' : 'Agency Name / Account'}
                   placeholder={isZh ? '输入代理名称或账号' : 'Type name or account'}
+                  value={filters.agentNameOrAccount}
+                  onChange={(event) =>
+                    setFilters((prev) => ({ ...prev, agentNameOrAccount: event.target.value }))
+                  }
                 />
                 <TextField
                   fullWidth
                   label={isZh ? '代理客户数' : 'Client Number by Proxy'}
                   placeholder={isZh ? '输入客户数' : 'Enter client count'}
+                  value={filters.clientCount}
+                  onChange={(event) =>
+                    setFilters((prev) => ({ ...prev, clientCount: event.target.value }))
+                  }
                 />
                 <TextField
                   fullWidth
                   label={isZh ? '公司所在地' : 'Company location'}
                   placeholder={isZh ? '输入城市 / 国家' : 'Type city or country'}
+                  value={filters.companyLocation}
+                  onChange={(event) =>
+                    setFilters((prev) => ({ ...prev, companyLocation: event.target.value }))
+                  }
                 />
                 <TextField
                   fullWidth
                   label={isZh ? '创建时间' : 'Creation Time'}
                   placeholder={isZh ? 'YYYY-MM-DD' : 'YYYY-MM-DD'}
+                  value={filters.creationTime}
+                  onChange={(event) =>
+                    setFilters((prev) => ({ ...prev, creationTime: event.target.value }))
+                  }
                 />
               </Stack>
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-                <TextField select fullWidth label={isZh ? '状态' : 'Status'} defaultValue=''>
+                <TextField
+                  select
+                  fullWidth
+                  label={isZh ? '状态' : 'Status'}
+                  value={filters.status}
+                  onChange={(event) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      status: (event.target.value as '' | StoreStatus) ?? '',
+                    }))
+                  }
+                >
                   <MenuItem value=''>{isZh ? '全部' : 'All'}</MenuItem>
                   <MenuItem value='active'>{isZh ? '启用' : 'Active'}</MenuItem>
                   <MenuItem value='pending'>{isZh ? '待审核' : 'Pending'}</MenuItem>
                   <MenuItem value='inactive'>{isZh ? '停用' : 'Inactive'}</MenuItem>
                 </TextField>
-                <TextField select fullWidth label={isZh ? '销售区域' : 'Sales Area'} defaultValue=''>
-                  <MenuItem value=''>{isZh ? '全部' : 'All'}</MenuItem>
-                  <MenuItem value='na'>{isZh ? '北美' : 'North America'}</MenuItem>
-                  <MenuItem value='cn-east'>{isZh ? '华东' : 'East China'}</MenuItem>
-                  <MenuItem value='cn-north'>{isZh ? '华北' : 'North China'}</MenuItem>
-                </TextField>
               </Stack>
               <Divider />
               <Stack direction='row' spacing={2} justifyContent='flex-end'>
-                <Button variant='outlined'>{isZh ? '重置' : 'Reset'}</Button>
-                <Button variant='contained'>{isZh ? '搜索' : 'Search'}</Button>
+                <Button variant='outlined' onClick={handleReset}>
+                  {isZh ? '重置' : 'Reset'}
+                </Button>
+                <Button variant='contained' onClick={handleSearch}>
+                  {isZh ? '搜索' : 'Search'}
+                </Button>
               </Stack>
             </Stack>
           </CardContent>
@@ -280,6 +360,11 @@ export default function StoreManagementPage() {
                 {isZh ? `共 ${total} 条记录` : `${total} records`}
               </Typography>
             </Stack>
+            {loading && rows.length > 0 && (
+              <Box sx={{ mb: 2 }}>
+                <LinearProgress />
+              </Box>
+            )}
             <TableContainer>
               <Table size='small'>
                 <TableHead>
@@ -308,60 +393,68 @@ export default function StoreManagementPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {rows.map((row) => (
-                    <TableRow key={row.store_id} hover>
-                      <TableCell>{row.client_count}</TableCell>
-                      <TableCell>{row.store_name ?? row.storeName ?? '-'}</TableCell>
-                      <TableCell>{row.agent_company_name ?? '-'}</TableCell>
-                      <TableCell>{row.proxy_account ?? '-'}</TableCell>
-                      <TableCell>{row.company_location ?? '-'}</TableCell>
-                      <TableCell>{row.sales_area ?? '-'}</TableCell>
-                      <TableCell>{row.store_count}</TableCell>
-                      <TableCell>{row.binding_count}</TableCell>
-                      <TableCell>{row.superior_agent_name ?? '-'}</TableCell>
-                      <TableCell>{formatDateTime(row.created_at)}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={getStatusLabel(row.status, isZh)}
-                          size='small'
-                          color={statusColorByCode[row.status]}
-                        />
-                      </TableCell>
-                      <TableCell align='right'>
-                        <Stack direction='row' spacing={1} justifyContent='flex-end'>
-                          <Button
-                            size='small'
-                            component={Link}
-                            href={`/${lang}/customerCenter/storeManagement/view?id=${encodeURIComponent(row.authorization_code ?? row.store_id)}&name=${encodeURIComponent(row.store_name ?? row.storeName ?? '')}`}
-                          >
-                            {isZh ? '查看' : 'View'}
-                          </Button>
-                          <Button size='small' color='secondary'>
-                            {isZh ? '编辑' : 'Edit'}
-                          </Button>
-                          <Button
-                            size='small'
-                            color='error'
-                            disabled={deletingId === row.store_id}
-                            onClick={() =>
-                              void handleDelete(
-                                row.store_id,
-                                row.store_name ?? row.storeName ?? row.store_id,
-                              )
-                            }
-                          >
-                            {deletingId === row.store_id
-                              ? isZh
-                                ? '删除中...'
-                                : 'Deleting...'
-                              : isZh
-                                ? '删除门店'
-                                : 'Delete Store'}
-                          </Button>
-                        </Stack>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {loading && rows.length === 0
+                    ? Array.from({ length: 6 }).map((_, index) => (
+                        <TableRow key={`loading-${index}`}>
+                          <TableCell colSpan={12}>
+                            <Skeleton variant='text' height={32} />
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    : rows.map((row) => (
+                        <TableRow key={row.store_id} hover>
+                          <TableCell>{row.client_count}</TableCell>
+                          <TableCell>{row.store_name ?? row.storeName ?? '-'}</TableCell>
+                          <TableCell>{row.agent_company_name ?? '-'}</TableCell>
+                          <TableCell>{row.proxy_account ?? '-'}</TableCell>
+                          <TableCell>{row.company_location ?? '-'}</TableCell>
+                          <TableCell>{row.sales_area ?? '-'}</TableCell>
+                          <TableCell>{row.store_count}</TableCell>
+                          <TableCell>{row.binding_count}</TableCell>
+                          <TableCell>{row.superior_agent_name ?? '-'}</TableCell>
+                          <TableCell>{formatDateTime(row.created_at)}</TableCell>
+                          <TableCell>
+                            <Chip
+                              label={getStatusLabel(row.status, isZh)}
+                              size='small'
+                              color={statusColorByCode[row.status]}
+                            />
+                          </TableCell>
+                          <TableCell align='right'>
+                            <Stack direction='row' spacing={1} justifyContent='flex-end'>
+                              <Button
+                                size='small'
+                                component={Link}
+                                href={`/${lang}/customerCenter/storeManagement/view?id=${encodeURIComponent(row.authorization_code ?? row.store_id)}&name=${encodeURIComponent(row.store_name ?? row.storeName ?? '')}`}
+                              >
+                                {isZh ? '查看' : 'View'}
+                              </Button>
+                              <Button size='small' color='secondary'>
+                                {isZh ? '编辑' : 'Edit'}
+                              </Button>
+                              <Button
+                                size='small'
+                                color='error'
+                                disabled={deletingId === row.store_id}
+                                onClick={() =>
+                                  void handleDelete(
+                                    row.store_id,
+                                    row.store_name ?? row.storeName ?? row.store_id,
+                                  )
+                                }
+                              >
+                                {deletingId === row.store_id
+                                  ? isZh
+                                    ? '删除中...'
+                                    : 'Deleting...'
+                                  : isZh
+                                    ? '删除门店'
+                                    : 'Delete Store'}
+                              </Button>
+                            </Stack>
+                          </TableCell>
+                        </TableRow>
+                      ))}
                   {!loading && rows.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={12} align='center'>

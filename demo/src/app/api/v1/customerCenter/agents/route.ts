@@ -13,20 +13,7 @@ export async function GET(req: NextRequest) {
     return unauthorizedResponse();
   }
 
-  return proxyToBackend('/api/v1/productCenter/machineProductLibrary', req, {
-    extraHeaders: {
-      'x-robotx-user-id': userId,
-    },
-  });
-}
-
-export async function POST(req: NextRequest) {
-  const userId = await resolveCurrentUserId(req);
-  if (!userId) {
-    return unauthorizedResponse();
-  }
-
-  return proxyToBackend('/api/v1/productCenter/machineProductLibrary', req, {
+  return proxyToBackend('/api/v1/customerCenter/agents', req, {
     extraHeaders: {
       'x-robotx-user-id': userId,
     },

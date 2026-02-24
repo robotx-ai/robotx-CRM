@@ -71,12 +71,15 @@ const LoginForm = () => {
           fullWidth
           fieldName={'email'}
           label={isZh ? '邮箱' : 'Email'}
-          defaultValue='robotx.tester@local.dev'
+          defaultValue=''
+          autoComplete='off'
+          inputProps={{ autoComplete: 'off' }}
         />
         <JumboOutlinedInput
           fieldName={'password'}
           label={isZh ? '密码' : 'Password'}
           type={values.showPassword ? 'text' : 'password'}
+          autoComplete='new-password'
           margin='none'
           endAdornment={
             <InputAdornment position='end'>
@@ -90,7 +93,7 @@ const LoginForm = () => {
             </InputAdornment>
           }
           sx={{ bgcolor: (theme) => theme.palette.background.paper }}
-          defaultValue={'Robotx#12345'}
+          defaultValue=''
         />
 
         <Stack

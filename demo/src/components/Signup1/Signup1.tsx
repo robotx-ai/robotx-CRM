@@ -4,7 +4,6 @@ import { SignupForm } from '@/components/SignupForm';
 import { ASSET_IMAGES } from '@/utilities/constants/paths';
 import { getAssetPath } from '@/utilities/helpers';
 import { Div } from '@jumbo/shared';
-import { Facebook, Google, Twitter } from '@mui/icons-material';
 import AddIcon from '@mui/icons-material/Add';
 import {
   alpha,
@@ -12,13 +11,20 @@ import {
   CardContent,
   CardMedia,
   Fab,
-  IconButton,
-  Stack,
   Typography,
 } from '@mui/material';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
+
+const supportedLocales = ['en-US', 'ar-SA', 'es-ES', 'fr-FR', 'it-IT', 'zh-CN'];
 
 export function Signup1() {
+  const pathname = usePathname();
+  const pathLocale = pathname?.split('/')[1];
+  const lang =
+    pathLocale && supportedLocales.includes(pathLocale) ? pathLocale : 'en-US';
+  const isZh = lang === 'zh-CN';
+
   return (
     <Div
       sx={{
@@ -65,7 +71,7 @@ export function Signup1() {
               variant={'h2'}
               sx={{ color: 'common.white', fontSize: '1.5rem', mb: 0 }}
             >
-              Sign up
+              {isZh ? '注册' : 'Sign up'}
             </Typography>
           </Div>
         </Div>
@@ -84,60 +90,13 @@ export function Signup1() {
           {/* go to signup form */}
           <SignupForm />
           <Typography textAlign={'center'} variant={'body1'} mb={1}>
-            Have an account?{' '}
-            <Link underline='none' href={'/auth/login-1'}>
-              Sign in
+            {isZh ? '已有账号？' : 'Have an account?'}{' '}
+            <Link underline='none' href={`/${lang}/auth/login-1`}>
+              {isZh ? '去登录' : 'Sign in'}
             </Link>
           </Typography>
         </CardContent>
       </Card>
-      <Typography variant={'body1'} mb={2}>
-        Or sign up with
-      </Typography>
-      <Stack direction='row' alignItems='center' spacing={1}>
-        <IconButton
-          sx={{
-            bgcolor: '#385196',
-            color: 'common.white',
-            p: (theme) => theme.spacing(1.25),
-
-            '&:hover': {
-              backgroundColor: '#385196',
-            },
-          }}
-          aria-label='Facebook'
-        >
-          <Facebook fontSize='small' />
-        </IconButton>
-        <IconButton
-          sx={{
-            bgcolor: '#00a8ff',
-            color: 'common.white',
-            p: (theme) => theme.spacing(1.25),
-
-            '&:hover': {
-              backgroundColor: '#00a8ff',
-            },
-          }}
-          aria-label='Twitter'
-        >
-          <Twitter fontSize='small' />
-        </IconButton>
-        <IconButton
-          sx={{
-            bgcolor: '#23272b',
-            color: 'common.white',
-            p: (theme) => theme.spacing(1.25),
-
-            '&:hover': {
-              backgroundColor: '#23272b',
-            },
-          }}
-          aria-label='Twitter'
-        >
-          <Google fontSize='small' />
-        </IconButton>
-      </Stack>
     </Div>
   );
 }

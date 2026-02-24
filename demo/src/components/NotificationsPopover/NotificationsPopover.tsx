@@ -44,7 +44,7 @@ const NotificationsPopover = () => {
       <JumboDdPopover
         triggerButton={
           <ThemeProvider theme={headerTheme}>
-            <JumboIconButton badge={{ variant: 'dot' }} elevation={23}>
+            <JumboIconButton badge={{ variant: 'dot' }} elevation={23} disabled>
               <NotificationImportantOutlinedIcon sx={{ fontSize: '1.25rem' }} />
             </JumboIconButton>
           </ThemeProvider>

@@ -48,14 +48,6 @@ export async function getMenus(locale: string) {
             path: `${base}/extra-pages/about-us`,
             label: 'Product Training',
           },
-          {
-            path: `${base}/extra-pages/contact-us`,
-            label: 'Support & Enablement',
-          },
-          {
-            path: `${base}/extra-pages/pricing-plan`,
-            label: 'Plans & Billing',
-          },
         ],
       },
       {
@@ -110,14 +102,6 @@ export async function getMenus(locale: string) {
         {
           path: `${base}/extra-pages/about-us`,
           label: '产品培训',
-        },
-        {
-          path: `${base}/extra-pages/contact-us`,
-          label: '支持与赋能',
-        },
-        {
-          path: `${base}/extra-pages/pricing-plan`,
-          label: '方案与计费',
         },
       ],
     },

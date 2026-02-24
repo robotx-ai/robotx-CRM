@@ -3,6 +3,8 @@
 import ContactPhoneOutlinedIcon from '@mui/icons-material/ContactPhoneOutlined';
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import ForumOutlinedIcon from '@mui/icons-material/ForumOutlined';
+import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined';
+import KeyboardArrowUpOutlinedIcon from '@mui/icons-material/KeyboardArrowUpOutlined';
 import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined';
 import SentimentDissatisfiedOutlinedIcon from '@mui/icons-material/SentimentDissatisfiedOutlined';
 import ThumbUpAltOutlinedIcon from '@mui/icons-material/ThumbUpAltOutlined';
@@ -13,6 +15,7 @@ import {
   Card,
   CardContent,
   Chip,
+  Collapse,
   CircularProgress,
   Divider,
   IconButton,
@@ -34,10 +37,25 @@ import {
 import Grid from '@mui/material/Grid2';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { MouseEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { MouseEvent, type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 
-type LeadStatus = 'Unfollowed' | 'Following Up' | 'Converted' | 'Lost';
-type LeadSource = 'Sales Email' | 'Shopify Website';
+type LeadStatus =
+  | 'Unfollowed'
+  | 'Following Up'
+  | 'Converted'
+  | 'Lost'
+  | 'Followed but No Reply'
+  | 'Followed with Reply'
+  | 'Sales Pending'
+  | 'Sales Rejected';
+
+type LeadSource =
+  | 'Sales Email'
+  | 'Shopify Website'
+  | 'Referral'
+  | 'Manufacturer Referral';
+
+type CustomerType = 'Education' | 'Individual' | 'Warehouse' | 'Hotel' | 'Hospital';
 
 type SalesLeadRow = {
   id: string;
@@ -45,10 +63,18 @@ type SalesLeadRow = {
   contact_name: string;
   contact_email: string;
   phone_number: string | null;
+  organization_name: string;
+  customer_type: CustomerType;
   interested_product: string | null;
   message: string | null;
-  location: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  zip_code: string | null;
   lead_source: LeadSource;
+  referrer_name: string | null;
+  referrer_phone: string | null;
+  referrer_email: string | null;
   source_campaign: string | null;
   lead_status: LeadStatus;
   created_at: string | null;
@@ -62,35 +88,79 @@ type SalesLeadListResponse = {
 
 type LeadFilters = {
   keyword: string;
+  organizationName: string;
+  customerType: '' | CustomerType;
   status: '' | LeadStatus;
   leadSource: '' | LeadSource;
-  location: string;
+  addressKeyword: string;
+  city: string;
+  state: string;
+  zipCode: string;
 };
 
 type SortField = 'lead_status' | 'lead_source' | 'created_at';
 type SortDirection = 'asc' | 'desc';
 
+const LEAD_STATUS_OPTIONS: LeadStatus[] = [
+  'Unfollowed',
+  'Following Up',
+  'Converted',
+  'Lost',
+  'Followed but No Reply',
+  'Followed with Reply',
+  'Sales Pending',
+  'Sales Rejected',
+];
+
+const LEAD_SOURCE_OPTIONS: LeadSource[] = [
+  'Sales Email',
+  'Shopify Website',
+  'Referral',
+  'Manufacturer Referral',
+];
+
+const CUSTOMER_TYPE_OPTIONS: CustomerType[] = [
+  'Education',
+  'Individual',
+  'Warehouse',
+  'Hotel',
+  'Hospital',
+];
+
 const defaultFilters: LeadFilters = {
   keyword: '',
+  organizationName: '',
+  customerType: '',
   status: '',
   leadSource: '',
-  location: '',
+  addressKeyword: '',
+  city: '',
+  state: '',
+  zipCode: '',
 };
 
 const statusSortOrder: Record<LeadStatus, number> = {
-  'Following Up': 0,
-  Unfollowed: 1,
-  Lost: 2,
-  Converted: 3,
+  Unfollowed: 0,
+  'Following Up': 1,
+  'Followed but No Reply': 2,
+  'Followed with Reply': 3,
+  'Sales Pending': 4,
+  Converted: 5,
+  'Sales Rejected': 6,
+  Lost: 7,
 };
 
 const statusColorMap: Record<
   LeadStatus,
-  'warning' | 'info' | 'success' | 'default'
+  'warning' | 'info' | 'success' | 'default' | 'primary' | 'secondary' | 'error'
 > = {
   Unfollowed: 'warning',
   'Following Up': 'info',
+  'Followed but No Reply': 'default',
+  'Followed with Reply': 'primary',
+  'Sales Pending': 'secondary',
   Converted: 'success',
+  'Sales Rejected': 'error',
   Lost: 'default',
 };
 
@@ -118,7 +188,7 @@ function formatUsPhoneNumber(value: string | null): string {
   }
 
   const trimmed = digits.slice(0, 10);
-  return `${trimmed.slice(0, 3)}-${trimmed.slice(3, 6)}-${trimmed.slice(6, 10)}`;
+  return `(${trimmed.slice(0, 3)}) ${trimmed.slice(3, 6)}-${trimmed.slice(6, 10)}`;
 }
 
 function getStatusLabel(status: LeadStatus, isZh: boolean): string {
@@ -129,7 +199,11 @@ function getStatusLabel(status: LeadStatus, isZh: boolean): string {
   if (status === 'Unfollowed') return '未跟进';
   if (status === 'Following Up') return '跟进中';
   if (status === 'Converted') return '已转化';
-  return '未成交';
+  if (status === 'Lost') return '未成交';
+  if (status === 'Followed but No Reply') return '已跟进未回复';
+  if (status === 'Followed with Reply') return '已跟进有回复';
+  if (status === 'Sales Pending') return '销售待定';
+  return '销售拒绝';
 }
 
 function getSourceLabel(source: LeadSource, isZh: boolean): string {
@@ -137,11 +211,40 @@ function getSourceLabel(source: LeadSource, isZh: boolean): string {
     return source;
   }
 
-  if (source === 'Sales Email') {
-    return '销售邮件';
-  }
-  return 'Shopify 网站';
+  if (source === 'Sales Email') return '销售邮件';
+  if (source === 'Shopify Website') return 'Shopify 网站';
+  if (source === 'Referral') return '推荐转介';
+  return '厂家转介';
 }
+
+function composeAddress(row: SalesLeadRow): string {
+  const parts = [row.address, row.city, row.state, row.zip_code]
+    .map((part) => (part ? part.trim() : ''))
+    .filter(Boolean);
+  return parts.length ? parts.join(', ') : '-';
+}
+
+const statusStatIcons: Record<LeadStatus, ReactNode> = {
+  Unfollowed: <ReportProblemOutlinedIcon color='warning' />,
+  'Following Up': <ForumOutlinedIcon color='info' />,
+  'Followed but No Reply': <ForumOutlinedIcon color='disabled' />,
+  'Followed with Reply': <ThumbUpAltOutlinedIcon color='primary' />,
+  'Sales Pending': <ForumOutlinedIcon color='secondary' />,
+  Converted: <ThumbUpAltOutlinedIcon color='success' />,
+  'Sales Rejected': <SentimentDissatisfiedOutlinedIcon color='error' />,
+  Lost: <SentimentDissatisfiedOutlinedIcon color='disabled' />,
+};
+
+const emptyStatusCounts: Record<LeadStatus, number> = {
+  Unfollowed: 0,
+  'Following Up': 0,
+  Converted: 0,
+  Lost: 0,
+  'Followed but No Reply': 0,
+  'Followed with Reply': 0,
+  'Sales Pending': 0,
+  'Sales Rejected': 0,
+};
 
 export default function SalesLeadsManagementPage() {
   const params = useParams();
@@ -153,25 +256,16 @@ export default function SalesLeadsManagementPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
-  const [statusCounts, setStatusCounts] = useState<Record<LeadStatus, number>>({
-    Unfollowed: 0,
-    'Following Up': 0,
-    Converted: 0,
-    Lost: 0,
-  });
+  const [statusCounts, setStatusCounts] =
+    useState<Record<LeadStatus, number>>(emptyStatusCounts);
   const [filters, setFilters] = useState<LeadFilters>(defaultFilters);
   const [hideLostLeads, setHideLostLeads] = useState(false);
-  const [updatingStatusIds, setUpdatingStatusIds] = useState<
-    Record<string, boolean>
-  >({});
-  const [deletingLeadIds, setDeletingLeadIds] = useState<Record<string, boolean>>(
-    {}
-  );
-  const [removingLeadIds, setRemovingLeadIds] = useState<Record<string, boolean>>(
-    {}
-  );
+  const [updatingStatusIds, setUpdatingStatusIds] = useState<Record<string, boolean>>({});
+  const [deletingLeadIds, setDeletingLeadIds] = useState<Record<string, boolean>>({});
+  const [removingLeadIds, setRemovingLeadIds] = useState<Record<string, boolean>>({});
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [filtersExpanded, setFiltersExpanded] = useState(true);
   const [statusMenu, setStatusMenu] = useState<{
     leadId: string;
     anchorEl: HTMLElement;
@@ -184,8 +278,10 @@ export default function SalesLeadsManagementPage() {
         const query = new URLSearchParams();
         query.set('limit', '200');
 
-        const keyword = nextFilters.keyword.trim();
-        const location = nextFilters.location.trim();
+        const keyword = [nextFilters.keyword.trim(), nextFilters.organizationName.trim()]
+          .filter(Boolean)
+          .join(' ')
+          .trim();
 
         if (keyword) {
           query.set('keyword', keyword);
@@ -196,16 +292,30 @@ export default function SalesLeadsManagementPage() {
         if (nextFilters.leadSource) {
           query.set('lead_source', nextFilters.leadSource);
         }
-        if (location) {
-          query.set('location', location);
+        if (nextFilters.customerType) {
+          query.set('keyword', `${query.get('keyword') || ''} ${nextFilters.customerType}`.trim());
         }
 
-        const response = await fetch(
-          `/api/v1/customerCenter/salesLeads?${query.toString()}`,
-          {
-            cache: 'no-store',
-          }
-        );
+        const addressKeyword = nextFilters.addressKeyword.trim();
+        if (addressKeyword) {
+          query.set('address_keyword', addressKeyword);
+        }
+        const city = nextFilters.city.trim();
+        if (city) {
+          query.set('city', city);
+        }
+        const state = nextFilters.state.trim();
+        if (state) {
+          query.set('state', state);
+        }
+        const zipCode = nextFilters.zipCode.trim();
+        if (zipCode) {
+          query.set('zip_code', zipCode);
+        }
+
+        const response = await fetch(`/api/v1/customerCenter/salesLeads?${query.toString()}`, {
+          cache: 'no-store',
+        });
 
         if (!response.ok) {
           throw new Error(`Failed to load sales leads: ${response.status}`);
@@ -229,23 +339,15 @@ export default function SalesLeadsManagementPage() {
   const loadGlobalStatistics = useCallback(async () => {
     setStatsLoading(true);
     try {
-      const statuses: LeadStatus[] = [
-        'Unfollowed',
-        'Following Up',
-        'Converted',
-        'Lost',
-      ];
-
       const totalsByStatus = await Promise.all(
-        statuses.map(async (status) => {
+        LEAD_STATUS_OPTIONS.map(async (status) => {
           const query = new URLSearchParams();
           query.set('limit', '1');
           query.set('status', status);
 
-          const response = await fetch(
-            `/api/v1/customerCenter/salesLeads?${query.toString()}`,
-            { cache: 'no-store' }
-          );
+          const response = await fetch(`/api/v1/customerCenter/salesLeads?${query.toString()}`, {
+            cache: 'no-store',
+          });
           if (!response.ok) {
             throw new Error(`Failed to load stats for ${status}: ${response.status}`);
           }
@@ -255,21 +357,14 @@ export default function SalesLeadsManagementPage() {
         })
       );
 
-      setStatusCounts({
-        Unfollowed: totalsByStatus.find(([status]) => status === 'Unfollowed')?.[1] ?? 0,
-        'Following Up':
-          totalsByStatus.find(([status]) => status === 'Following Up')?.[1] ?? 0,
-        Converted: totalsByStatus.find(([status]) => status === 'Converted')?.[1] ?? 0,
-        Lost: totalsByStatus.find(([status]) => status === 'Lost')?.[1] ?? 0,
+      const nextCounts = { ...emptyStatusCounts };
+      totalsByStatus.forEach(([status, count]) => {
+        nextCounts[status] = count;
       });
+      setStatusCounts(nextCounts);
     } catch (error) {
       console.error(error);
-      setStatusCounts({
-        Unfollowed: 0,
-        'Following Up': 0,
-        Converted: 0,
-        Lost: 0,
-      });
+      setStatusCounts(emptyStatusCounts);
       window.alert(isZh ? '统计数据加载失败' : 'Failed to load statistics');
     } finally {
       setStatsLoading(false);
@@ -325,11 +420,7 @@ export default function SalesLeadsManagementPage() {
       }
 
       setUpdatingStatusIds((prev) => ({ ...prev, [leadId]: true }));
-      setRows((prev) =>
-        prev.map((row) =>
-          row.id === leadId ? { ...row, lead_status: nextStatus } : row
-        )
-      );
+      setRows((prev) => prev.map((row) => (row.id === leadId ? { ...row, lead_status: nextStatus } : row)));
       setStatusCounts((prev) => ({
         ...prev,
         [previousStatus]: Math.max(0, prev[previousStatus] - 1),
@@ -351,24 +442,18 @@ export default function SalesLeadsManagementPage() {
           throw new Error(`Failed to update lead status: ${response.status}`);
         }
         const updatedLead = (await response.json()) as SalesLeadRow;
-        setRows((prev) =>
-          prev.map((row) => (row.id === leadId ? updatedLead : row))
-        );
+        setRows((prev) => prev.map((row) => (row.id === leadId ? updatedLead : row)));
       } catch (error) {
         console.error(error);
         setRows((prev) =>
-          prev.map((row) =>
-            row.id === leadId ? { ...row, lead_status: previousStatus } : row
-          )
+          prev.map((row) => (row.id === leadId ? { ...row, lead_status: previousStatus } : row))
         );
         setStatusCounts((prev) => ({
           ...prev,
           [nextStatus]: Math.max(0, prev[nextStatus] - 1),
           [previousStatus]: prev[previousStatus] + 1,
         }));
-        window.alert(
-          isZh ? '更新线索状态失败' : 'Failed to update lead status'
-        );
+        window.alert(isZh ? '更新线索状态失败' : 'Failed to update lead status');
       } finally {
         setUpdatingStatusIds((prev) => {
           const next = { ...prev };
@@ -380,15 +465,9 @@ export default function SalesLeadsManagementPage() {
     [isZh]
   );
 
-  const handleOpenStatusMenu = useCallback(
-    (leadId: string, event: MouseEvent<HTMLElement>) => {
-      setStatusMenu({
-        leadId,
-        anchorEl: event.currentTarget,
-      });
-    },
-    []
-  );
+  const handleOpenStatusMenu = useCallback((leadId: string, event: MouseEvent<HTMLElement>) => {
+    setStatusMenu({ leadId, anchorEl: event.currentTarget });
+  }, []);
 
   const handleCloseStatusMenu = useCallback(() => {
     setStatusMenu(null);
@@ -475,42 +554,17 @@ export default function SalesLeadsManagementPage() {
   );
 
   const statistics = useMemo(() => {
-    return [
-      {
-        key: 'unfollowed',
-        status: 'Unfollowed' as LeadStatus,
-        title: isZh ? '未跟进' : 'Unfollowed',
-        value: statusCounts.Unfollowed,
-        icon: <ReportProblemOutlinedIcon color='warning' />,
-      },
-      {
-        key: 'following',
-        status: 'Following Up' as LeadStatus,
-        title: isZh ? '跟进中' : 'Following Up',
-        value: statusCounts['Following Up'],
-        icon: <ForumOutlinedIcon color='info' />,
-      },
-      {
-        key: 'converted',
-        status: 'Converted' as LeadStatus,
-        title: isZh ? '已转化' : 'Converted',
-        value: statusCounts.Converted,
-        icon: <ThumbUpAltOutlinedIcon color='success' />,
-      },
-      {
-        key: 'lost',
-        status: 'Lost' as LeadStatus,
-        title: isZh ? '未成交' : 'Lost',
-        value: statusCounts.Lost,
-        icon: <SentimentDissatisfiedOutlinedIcon color='disabled' />,
-      },
-    ];
+    return LEAD_STATUS_OPTIONS.map((status) => ({
+      key: status,
+      status,
+      title: getStatusLabel(status, isZh),
+      value: statusCounts[status],
+      icon: statusStatIcons[status],
+    }));
   }, [isZh, statusCounts]);
 
   const visibleRows = useMemo(() => {
-    const filtered = hideLostLeads
-      ? rows.filter((row) => row.lead_status !== 'Lost')
-      : rows;
+    const filtered = hideLostLeads ? rows.filter((row) => row.lead_status !== 'Lost') : rows;
 
     return [...filtered].sort((a, b) => {
       let compare = 0;
@@ -558,14 +612,12 @@ export default function SalesLeadsManagementPage() {
               </Typography>
               <Typography variant='body2' color='text.secondary' sx={{ mt: 1 }}>
                 {isZh
-                  ? '聚合联系表单线索并按状态跟进，提升线索转化效率。'
-                  : 'Track contact-form leads and follow-up status to improve conversion speed.'}
+                  ? '按线索来源、客户类型、响应状态跟进线索。'
+                  : 'Track sales leads by source, customer type, and response status.'}
               </Typography>
             </Box>
             <Stack direction='row' spacing={1.5}>
-              <Button variant='outlined'>
-                {isZh ? '导出线索' : 'Export Leads'}
-              </Button>
+              <Button variant='outlined'>{isZh ? '导出线索' : 'Export Leads'}</Button>
               <Button
                 variant='contained'
                 startIcon={<ContactPhoneOutlinedIcon />}
@@ -608,11 +660,7 @@ export default function SalesLeadsManagementPage() {
                   }}
                 >
                   <CardContent>
-                    <Stack
-                      direction='row'
-                      justifyContent='space-between'
-                      alignItems='flex-start'
-                    >
+                    <Stack direction='row' justifyContent='space-between' alignItems='flex-start'>
                       <Stack spacing={1}>
                         <Typography variant='body1' color='text.secondary'>
                           {item.title}
@@ -633,109 +681,168 @@ export default function SalesLeadsManagementPage() {
         <Card>
           <CardContent>
             <Stack spacing={2}>
-              <Typography variant='h6'>
-                {isZh ? '筛选条件' : 'Filters'}
-              </Typography>
-              <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-                <TextField
-                  fullWidth
-                  label={isZh ? '关键词' : 'Keyword'}
-                  placeholder={
-                    isZh
-                      ? '姓名 / 邮箱 / 电话 / 意向产品'
-                      : 'Name / Email / Phone / Product'
-                  }
-                  value={filters.keyword}
-                  onChange={(event) =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      keyword: event.target.value,
-                    }))
-                  }
-                />
-                <TextField
-                  select
-                  fullWidth
-                  label={isZh ? '线索状态' : 'Lead Status'}
-                  value={filters.status}
-                  onChange={(event) =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      status: (event.target.value as '' | LeadStatus) ?? '',
-                    }))
+              <Stack direction='row' alignItems='center' justifyContent='space-between'>
+                <Typography variant='h6'>{isZh ? '筛选条件' : 'Filters'}</Typography>
+                <Button
+                  size='small'
+                  onClick={() => setFiltersExpanded((prev) => !prev)}
+                  endIcon={
+                    filtersExpanded ? (
+                      <KeyboardArrowUpOutlinedIcon />
+                    ) : (
+                      <KeyboardArrowDownOutlinedIcon />
+                    )
                   }
                 >
-                  <MenuItem value=''>{isZh ? '全部' : 'All'}</MenuItem>
-                  <MenuItem value='Unfollowed'>
-                    {isZh ? '未跟进' : 'Unfollowed'}
-                  </MenuItem>
-                  <MenuItem value='Following Up'>
-                    {isZh ? '跟进中' : 'Following Up'}
-                  </MenuItem>
-                  <MenuItem value='Converted'>
-                    {isZh ? '已转化' : 'Converted'}
-                  </MenuItem>
-                  <MenuItem value='Lost'>{isZh ? '未成交' : 'Lost'}</MenuItem>
-                </TextField>
-                <TextField
-                  select
-                  fullWidth
-                  label={isZh ? '线索来源' : 'Lead Source'}
-                  value={filters.leadSource}
-                  onChange={(event) =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      leadSource: (event.target.value as '' | LeadSource) ?? '',
-                    }))
-                  }
-                >
-                  <MenuItem value=''>{isZh ? '全部' : 'All'}</MenuItem>
-                  <MenuItem value='Sales Email'>
-                    {isZh ? '销售邮件' : 'Sales Email'}
-                  </MenuItem>
-                  <MenuItem value='Shopify Website'>
-                    {isZh ? 'Shopify 网站' : 'Shopify Website'}
-                  </MenuItem>
-                </TextField>
-                <TextField
-                  fullWidth
-                  label={isZh ? '地区' : 'Location'}
-                  placeholder={
-                    isZh ? '输入地区关键字' : 'Type location keyword'
-                  }
-                  value={filters.location}
-                  onChange={(event) =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      location: event.target.value,
-                    }))
-                  }
-                />
-              </Stack>
-              <Divider />
-              <Stack direction='row' spacing={2} justifyContent='flex-end'>
-                <Button variant='outlined' onClick={handleReset}>
-                  {isZh ? '重置' : 'Reset'}
-                </Button>
-                <Button variant='contained' onClick={handleSearch}>
-                  {isZh ? '搜索' : 'Search'}
+                  {filtersExpanded
+                    ? (isZh ? '收起' : 'Collapse')
+                    : (isZh ? '展开' : 'Expand')}
                 </Button>
               </Stack>
+              <Collapse in={filtersExpanded}>
+                <Stack spacing={2}>
+                  <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <TextField
+                    fullWidth
+                    label={isZh ? '关键词' : 'Keyword'}
+                    placeholder={
+                      isZh
+                        ? '姓名 / 邮箱 / 电话 / 意向产品 / 推荐人'
+                        : 'Name / Email / Phone / Product / Referrer'
+                    }
+                    value={filters.keyword}
+                    onChange={(event) => setFilters((prev) => ({ ...prev, keyword: event.target.value }))}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <TextField
+                    fullWidth
+                    label={isZh ? '机构/企业名称' : 'Organization / Business Name'}
+                    value={filters.organizationName}
+                    onChange={(event) =>
+                      setFilters((prev) => ({ ...prev, organizationName: event.target.value }))
+                    }
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <TextField
+                    select
+                    fullWidth
+                    label={isZh ? '客户类型' : 'Customer Type'}
+                    value={filters.customerType}
+                    onChange={(event) =>
+                      setFilters((prev) => ({
+                        ...prev,
+                        customerType: (event.target.value as '' | CustomerType) ?? '',
+                      }))
+                    }
+                  >
+                    <MenuItem value=''>{isZh ? '全部' : 'All'}</MenuItem>
+                    {CUSTOMER_TYPE_OPTIONS.map((type) => (
+                      <MenuItem key={type} value={type}>
+                        {type}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <TextField
+                    select
+                    fullWidth
+                    label={isZh ? '线索状态' : 'Lead Status'}
+                    value={filters.status}
+                    onChange={(event) =>
+                      setFilters((prev) => ({
+                        ...prev,
+                        status: (event.target.value as '' | LeadStatus) ?? '',
+                      }))
+                    }
+                  >
+                    <MenuItem value=''>{isZh ? '全部' : 'All'}</MenuItem>
+                    {LEAD_STATUS_OPTIONS.map((status) => (
+                      <MenuItem key={status} value={status}>
+                        {getStatusLabel(status, isZh)}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <TextField
+                    select
+                    fullWidth
+                    label={isZh ? '线索来源' : 'Lead Source'}
+                    value={filters.leadSource}
+                    onChange={(event) =>
+                      setFilters((prev) => ({
+                        ...prev,
+                        leadSource: (event.target.value as '' | LeadSource) ?? '',
+                      }))
+                    }
+                  >
+                    <MenuItem value=''>{isZh ? '全部' : 'All'}</MenuItem>
+                    {LEAD_SOURCE_OPTIONS.map((source) => (
+                      <MenuItem key={source} value={source}>
+                        {getSourceLabel(source, isZh)}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <TextField
+                    fullWidth
+                    label={isZh ? '地址关键字' : 'Address Keyword'}
+                    placeholder={isZh ? '地址 / 城市 / 州 / 邮编' : 'Address / City / State / Zip'}
+                    value={filters.addressKeyword}
+                    onChange={(event) =>
+                      setFilters((prev) => ({ ...prev, addressKeyword: event.target.value }))
+                    }
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <TextField
+                    fullWidth
+                    label={isZh ? '城市' : 'City'}
+                    value={filters.city}
+                    onChange={(event) => setFilters((prev) => ({ ...prev, city: event.target.value }))}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <TextField
+                    fullWidth
+                    label={isZh ? '州' : 'State'}
+                    value={filters.state}
+                    onChange={(event) => setFilters((prev) => ({ ...prev, state: event.target.value }))}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <TextField
+                    fullWidth
+                    label={isZh ? '邮编' : 'Zip Code'}
+                    value={filters.zipCode}
+                    onChange={(event) => setFilters((prev) => ({ ...prev, zipCode: event.target.value }))}
+                  />
+                </Grid>
+                  </Grid>
+                  <Divider />
+                  <Stack direction='row' spacing={2} justifyContent='flex-end'>
+                    <Button variant='outlined' onClick={handleReset}>
+                      {isZh ? '重置' : 'Reset'}
+                    </Button>
+                    <Button variant='contained' onClick={handleSearch}>
+                      {isZh ? '搜索' : 'Search'}
+                    </Button>
+                  </Stack>
+                </Stack>
+              </Collapse>
             </Stack>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent>
-            <Stack
-              direction={{ xs: 'column', sm: 'row' }}
-              justifyContent='space-between'
-              spacing={1}
-              sx={{ mb: 2 }}
-            >
-              <Typography variant='h6'>
-                {isZh ? '线索列表' : 'Leads List'}
-              </Typography>
+            <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent='space-between' spacing={1} sx={{ mb: 2 }}>
+              <Typography variant='h6'>{isZh ? '线索列表' : 'Leads List'}</Typography>
               <Typography variant='body2' color='text.secondary'>
                 {isZh ? `共 ${visibleTotal} 条记录` : `${visibleTotal} records`}
               </Typography>
@@ -745,17 +852,17 @@ export default function SalesLeadsManagementPage() {
                 <TableHead>
                   <TableRow>
                     <TableCell>{isZh ? '姓名' : 'Name'}</TableCell>
-                    <TableCell sx={{ width: 160 }}>
-                      {isZh ? '邮箱' : 'Email'}
-                    </TableCell>
-                    <TableCell sx={{ width: 130 }}>
-                      {isZh ? '电话' : 'Phone Number'}
-                    </TableCell>
+                    <TableCell>{isZh ? '机构/企业' : 'Organization'}</TableCell>
+                    <TableCell>{isZh ? '客户类型' : 'Customer Type'}</TableCell>
+                    <TableCell sx={{ width: 130 }}>{isZh ? '电话' : 'Phone Number'}</TableCell>
                     <TableCell>
-                      {isZh ? '意向产品' : 'Interested Product'}
-                    </TableCell>
-                    <TableCell sx={{ width: 160, minWidth: 160 }}>
-                      {isZh ? '留言' : 'Message'}
+                      <TableSortLabel
+                        active={sortField === 'lead_source'}
+                        direction={sortField === 'lead_source' ? sortDirection : 'asc'}
+                        onClick={() => handleSort('lead_source')}
+                      >
+                        {isZh ? '线索来源' : 'Lead Source'}
+                      </TableSortLabel>
                     </TableCell>
                     <TableCell>
                       <TableSortLabel
@@ -766,16 +873,7 @@ export default function SalesLeadsManagementPage() {
                         {isZh ? '线索状态' : 'Lead Status'}
                       </TableSortLabel>
                     </TableCell>
-                    <TableCell>
-                      <TableSortLabel
-                        active={sortField === 'lead_source'}
-                        direction={sortField === 'lead_source' ? sortDirection : 'asc'}
-                        onClick={() => handleSort('lead_source')}
-                      >
-                        {isZh ? '线索来源' : 'Lead Source'}
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell>{isZh ? '地区' : 'Location'}</TableCell>
+                    <TableCell>{isZh ? '地址' : 'Address'}</TableCell>
                     <TableCell>
                       <TableSortLabel
                         active={sortField === 'created_at'}
@@ -803,7 +901,7 @@ export default function SalesLeadsManagementPage() {
                   {loading &&
                     Array.from({ length: 4 }).map((_, index) => (
                       <TableRow key={`loading-${index}`}>
-                        <TableCell colSpan={10}>
+                        <TableCell colSpan={9}>
                           <Skeleton variant='rounded' height={26} />
                         </TableCell>
                       </TableRow>
@@ -816,53 +914,25 @@ export default function SalesLeadsManagementPage() {
                         sx={{
                           transition: 'opacity 240ms ease, transform 240ms ease',
                           opacity: removingLeadIds[row.id] ? 0 : 1,
-                          transform: removingLeadIds[row.id]
-                            ? 'translateX(8px)'
-                            : 'translateX(0)',
+                          transform: removingLeadIds[row.id] ? 'translateX(8px)' : 'translateX(0)',
                           pointerEvents: removingLeadIds[row.id] ? 'none' : 'auto',
                         }}
                       >
                         <TableCell>{row.contact_name}</TableCell>
-                        <TableCell sx={{ width: 160, maxWidth: 160 }}>
-                          <Typography noWrap title={row.contact_email}>
-                            {row.contact_email}
-                          </Typography>
-                        </TableCell>
+                        <TableCell>{row.organization_name || '-'}</TableCell>
+                        <TableCell>{row.customer_type || '-'}</TableCell>
                         <TableCell sx={{ width: 130, maxWidth: 130 }}>
-                          <Typography noWrap>
-                            {formatUsPhoneNumber(row.phone_number)}
-                          </Typography>
+                          <Typography noWrap>{formatUsPhoneNumber(row.phone_number)}</Typography>
                         </TableCell>
-                        <TableCell>{row.interested_product ?? '-'}</TableCell>
-                        <TableCell sx={{ width: 160, minWidth: 160 }}>
-                          <Typography
-                            variant='body2'
-                            sx={{
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              display: '-webkit-box',
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: 'vertical',
-                              wordBreak: 'break-word',
-                            }}
-                          >
-                            {row.message ?? '-'}
-                          </Typography>
-                        </TableCell>
+                        <TableCell>{getSourceLabel(row.lead_source, isZh)}</TableCell>
                         <TableCell>
                           <Chip
                             size='small'
                             label={
                               updatingStatusIds[row.id] ? (
-                                <Stack
-                                  direction='row'
-                                  spacing={0.75}
-                                  alignItems='center'
-                                >
+                                <Stack direction='row' spacing={0.75} alignItems='center'>
                                   <CircularProgress size={12} color='inherit' />
-                                  <span>
-                                    {getStatusLabel(row.lead_status, isZh)}
-                                  </span>
+                                  <span>{getStatusLabel(row.lead_status, isZh)}</span>
                                 </Stack>
                               ) : (
                                 getStatusLabel(row.lead_status, isZh)
@@ -875,17 +945,12 @@ export default function SalesLeadsManagementPage() {
                               }
                             }}
                             sx={{
-                              cursor: updatingStatusIds[row.id]
-                                ? 'not-allowed'
-                                : 'pointer',
+                              cursor: updatingStatusIds[row.id] ? 'not-allowed' : 'pointer',
                               opacity: updatingStatusIds[row.id] ? 0.7 : 1,
                             }}
                           />
                         </TableCell>
-                        <TableCell>
-                          {getSourceLabel(row.lead_source, isZh)}
-                        </TableCell>
-                        <TableCell>{row.location ?? '-'}</TableCell>
+                        <TableCell>{composeAddress(row)}</TableCell>
                         <TableCell>{formatDateTime(row.created_at)}</TableCell>
                         <TableCell
                           align='right'
@@ -898,24 +963,13 @@ export default function SalesLeadsManagementPage() {
                             boxShadow: (theme) => `-1px 0 0 ${theme.palette.divider}`,
                           }}
                         >
-                          <Stack
-                            direction='row'
-                            spacing={0.5}
-                            alignItems='center'
-                            justifyContent='flex-end'
-                          >
+                          <Stack direction='row' spacing={0.5} alignItems='center' justifyContent='flex-end'>
                             <Button
                               size='small'
                               component={Link}
-                              href={`/${lang}/sales-leads/detail?id=${encodeURIComponent(
-                                row.id
-                              )}`}
+                              href={`/${lang}/sales-leads/detail?id=${encodeURIComponent(row.id)}`}
                             >
                               {isZh ? '查看' : 'View'}
-                            </Button>
-                            <Typography color='text.disabled'>|</Typography>
-                            <Button size='small' color='secondary'>
-                              {isZh ? '跟进' : 'Follow-up'}
                             </Button>
                             <Typography color='text.disabled'>|</Typography>
                             <IconButton
@@ -936,7 +990,7 @@ export default function SalesLeadsManagementPage() {
                     ))}
                   {!loading && visibleRows.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={10} align='center'>
+                      <TableCell colSpan={9} align='center'>
                         {isZh ? '暂无销售线索' : 'No sales leads found'}
                       </TableCell>
                     </TableRow>
@@ -950,34 +1004,11 @@ export default function SalesLeadsManagementPage() {
               onClose={handleCloseStatusMenu}
               anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
             >
-              <MenuItem onClick={() => handleSelectStatusFromMenu('Unfollowed')}>
-                <Chip
-                  size='small'
-                  label={getStatusLabel('Unfollowed', isZh)}
-                  color={statusColorMap.Unfollowed}
-                />
-              </MenuItem>
-              <MenuItem onClick={() => handleSelectStatusFromMenu('Following Up')}>
-                <Chip
-                  size='small'
-                  label={getStatusLabel('Following Up', isZh)}
-                  color={statusColorMap['Following Up']}
-                />
-              </MenuItem>
-              <MenuItem onClick={() => handleSelectStatusFromMenu('Converted')}>
-                <Chip
-                  size='small'
-                  label={getStatusLabel('Converted', isZh)}
-                  color={statusColorMap.Converted}
-                />
-              </MenuItem>
-              <MenuItem onClick={() => handleSelectStatusFromMenu('Lost')}>
-                <Chip
-                  size='small'
-                  label={getStatusLabel('Lost', isZh)}
-                  color={statusColorMap.Lost}
-                />
-              </MenuItem>
+              {LEAD_STATUS_OPTIONS.map((status) => (
+                <MenuItem key={status} onClick={() => handleSelectStatusFromMenu(status)}>
+                  <Chip size='small' label={getStatusLabel(status, isZh)} color={statusColorMap[status]} />
+                </MenuItem>
+              ))}
             </Menu>
           </CardContent>
         </Card>

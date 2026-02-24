@@ -5,6 +5,7 @@ import { ContentLayout } from '@/layouts/ContentLayout';
 import { JumboCard, JumboDdMenu } from '@jumbo/components';
 import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined';
 import AlternateEmailOutlinedIcon from '@mui/icons-material/AlternateEmailOutlined';
+import ApartmentOutlinedIcon from '@mui/icons-material/ApartmentOutlined';
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined';
 import AutorenewOutlinedIcon from '@mui/icons-material/AutorenewOutlined';
 import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined';
@@ -26,13 +27,13 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   Fade,
   List,
   ListItem,
   ListItemIcon,
   ListItemText,
   Link as MuiLink,
-  Divider,
   Menu,
   MenuItem,
   Skeleton,
@@ -46,8 +47,23 @@ import { MouseEvent, useEffect, useMemo, useState } from 'react';
 import { CONTAINER_MAX_WIDTH } from '../../config/layouts';
 import { type ScheduleDataObject } from '../ScheduleCard/data';
 
-type LeadStatus = 'Unfollowed' | 'Following Up' | 'Converted' | 'Lost';
-type LeadSource = 'Sales Email' | 'Shopify Website';
+type LeadStatus =
+  | 'Unfollowed'
+  | 'Following Up'
+  | 'Converted'
+  | 'Lost'
+  | 'Followed but No Reply'
+  | 'Followed with Reply'
+  | 'Sales Pending'
+  | 'Sales Rejected';
+
+type LeadSource =
+  | 'Sales Email'
+  | 'Shopify Website'
+  | 'Referral'
+  | 'Manufacturer Referral';
+
+type CustomerType = 'Education' | 'Individual' | 'Warehouse' | 'Hotel' | 'Hospital';
 
 type SalesLeadRow = {
   id: string;
@@ -55,10 +71,18 @@ type SalesLeadRow = {
   contact_name: string;
   contact_email: string;
   phone_number: string | null;
+  organization_name: string;
+  customer_type: CustomerType;
   interested_product: string | null;
   message: string | null;
-  location: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  zip_code: string | null;
   lead_source: LeadSource;
+  referrer_name: string | null;
+  referrer_phone: string | null;
+  referrer_email: string | null;
   source_campaign: string | null;
   lead_status: LeadStatus;
   created_at: string | null;
@@ -79,13 +103,28 @@ type SalesLeadFollowupListResponse = {
   items: SalesLeadFollowupRow[];
 };
 
+const LEAD_STATUS_OPTIONS: LeadStatus[] = [
+  'Unfollowed',
+  'Following Up',
+  'Converted',
+  'Lost',
+  'Followed but No Reply',
+  'Followed with Reply',
+  'Sales Pending',
+  'Sales Rejected',
+];
+
 const statusColorMap: Record<
   LeadStatus,
-  'warning' | 'info' | 'success' | 'default'
+  'warning' | 'info' | 'success' | 'default' | 'primary' | 'secondary' | 'error'
 > = {
   Unfollowed: 'warning',
   'Following Up': 'info',
+  'Followed but No Reply': 'default',
+  'Followed with Reply': 'primary',
+  'Sales Pending': 'secondary',
   Converted: 'success',
+  'Sales Rejected': 'error',
   Lost: 'default',
 };
 
@@ -94,7 +133,11 @@ function getStatusLabel(status: LeadStatus, isZh: boolean): string {
   if (status === 'Unfollowed') return '未跟进';
   if (status === 'Following Up') return '跟进中';
   if (status === 'Converted') return '已转化';
-  return '未成交';
+  if (status === 'Lost') return '未成交';
+  if (status === 'Followed but No Reply') return '已跟进未回复';
+  if (status === 'Followed with Reply') return '已跟进有回复';
+  if (status === 'Sales Pending') return '销售待定';
+  return '销售拒绝';
 }
 
 function formatDateTime(value: string | null): string {
@@ -109,7 +152,7 @@ function formatUsPhoneNumber(value: string | null): string {
   const digits = value.replace(/\D/g, '');
   if (digits.length < 10) return value;
   const trimmed = digits.slice(0, 10);
-  return `${trimmed.slice(0, 3)}-${trimmed.slice(3, 6)}-${trimmed.slice(6, 10)}`;
+  return `(${trimmed.slice(0, 3)}) ${trimmed.slice(3, 6)}-${trimmed.slice(6, 10)}`;
 }
 
 function formatMonthYear(value: string | null): string {
@@ -133,6 +176,14 @@ function formatFollowupDate(value: string | null): string {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+function composeAddress(lead: SalesLeadRow | null): string {
+  if (!lead) return '-';
+  const parts = [lead.address, lead.city, lead.state, lead.zip_code]
+    .map((part) => (part ? part.trim() : ''))
+    .filter(Boolean);
+  return parts.length ? parts.join(', ') : '-';
 }
 
 const useProfileLayout = () => {
@@ -220,9 +271,7 @@ export function SalesLeadDetail() {
       } catch (err) {
         if (!active) return;
         setLead(null);
-        setError(
-          err instanceof Error ? err.message : 'Failed to load sales lead detail'
-        );
+        setError(err instanceof Error ? err.message : 'Failed to load sales lead detail');
       } finally {
         if (active) {
           setLoading(false);
@@ -239,16 +288,13 @@ export function SalesLeadDetail() {
         if (!followupsResponse.ok) {
           throw new Error(`Failed to load follow-ups: ${followupsResponse.status}`);
         }
-        const followupsPayload =
-          (await followupsResponse.json()) as SalesLeadFollowupListResponse;
+        const followupsPayload = (await followupsResponse.json()) as SalesLeadFollowupListResponse;
         if (!active) return;
         setFollowups(followupsPayload.items ?? []);
       } catch (err) {
         if (!active) return;
         setFollowups([]);
-        setFollowupsError(
-          err instanceof Error ? err.message : 'Failed to load follow-ups'
-        );
+        setFollowupsError(err instanceof Error ? err.message : 'Failed to load follow-ups');
       } finally {
         if (active) {
           setFollowupsLoading(false);
@@ -308,7 +354,7 @@ export function SalesLeadDetail() {
 
       const payload = (await response.json()) as SalesLeadRow;
       setLead(payload);
-    } catch (err) {
+    } catch {
       setLead((prev) => (prev ? { ...prev, lead_status: previousStatus } : prev));
       window.alert(isZh ? '更新线索状态失败' : 'Failed to update lead status');
     } finally {
@@ -324,16 +370,13 @@ export function SalesLeadDetail() {
 
     setAddingFollowup(true);
     try {
-      const response = await fetch(
-        `/api/v1/customerCenter/salesLeads/${leadId}/followups`,
-        {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-          },
-          body: JSON.stringify({ note }),
-        }
-      );
+      const response = await fetch(`/api/v1/customerCenter/salesLeads/${leadId}/followups`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ note }),
+      });
       if (!response.ok) {
         throw new Error(`Failed to create follow-up: ${response.status}`);
       }
@@ -341,7 +384,7 @@ export function SalesLeadDetail() {
       setFollowups((prev) => [payload, ...prev]);
       setAddFollowupOpen(false);
       setNewFollowupNote('');
-    } catch (err) {
+    } catch {
       window.alert(isZh ? '创建跟进失败' : 'Failed to add follow-up');
     } finally {
       setAddingFollowup(false);
@@ -405,9 +448,7 @@ export function SalesLeadDetail() {
                       <Typography variant={'h4'} mb={0.5}>
                         {lead?.contact_name || 'Sales Lead'}
                       </Typography>
-                      <Typography variant={'body2'}>
-                        {lead?.contact_email || '-'}
-                      </Typography>
+                      <Typography variant={'body2'}>{lead?.contact_email || '-'}</Typography>
                     </Stack>
                   </Stack>
                 )}
@@ -447,7 +488,11 @@ export function SalesLeadDetail() {
                 </ListItemIcon>
                 <ListItemText
                   primary={<Typography variant='body1' width={'50%'}>Lead ID</Typography>}
-                  secondary={<Typography variant='body1' color='text.primary' width={'50%'}>{lead?.id || '-'}</Typography>}
+                  secondary={
+                    <Typography variant='body1' color='text.primary' width={'50%'}>
+                      {lead?.id || '-'}
+                    </Typography>
+                  }
                 />
               </ListItem>
               <ListItem>
@@ -456,7 +501,11 @@ export function SalesLeadDetail() {
                 </ListItemIcon>
                 <ListItemText
                   primary={<Typography variant='body1' width={'50%'}>Contact Name</Typography>}
-                  secondary={<Typography variant='body1' color='text.primary' width={'50%'}>{lead?.contact_name || '-'}</Typography>}
+                  secondary={
+                    <Typography variant='body1' color='text.primary' width={'50%'}>
+                      {lead?.contact_name || '-'}
+                    </Typography>
+                  }
                 />
               </ListItem>
               <ListItem>
@@ -501,7 +550,37 @@ export function SalesLeadDetail() {
                 </ListItemIcon>
                 <ListItemText
                   primary={<Typography variant='body1' width={'50%'}>Source</Typography>}
-                  secondary={<Typography variant='body1' color='text.primary' width={'50%'}>{lead?.lead_source || '-'}</Typography>}
+                  secondary={
+                    <Typography variant='body1' color='text.primary' width={'50%'}>
+                      {lead?.lead_source || '-'}
+                    </Typography>
+                  }
+                />
+              </ListItem>
+              <ListItem>
+                <ListItemIcon>
+                  <ApartmentOutlinedIcon />
+                </ListItemIcon>
+                <ListItemText
+                  primary={<Typography variant='body1' width={'50%'}>Organization</Typography>}
+                  secondary={
+                    <Typography variant='body1' color='text.primary' width={'50%'}>
+                      {lead?.organization_name || '-'}
+                    </Typography>
+                  }
+                />
+              </ListItem>
+              <ListItem>
+                <ListItemIcon>
+                  <CategoryOutlinedIcon />
+                </ListItemIcon>
+                <ListItemText
+                  primary={<Typography variant='body1' width={'50%'}>Customer Type</Typography>}
+                  secondary={
+                    <Typography variant='body1' color='text.primary' width={'50%'}>
+                      {lead?.customer_type || '-'}
+                    </Typography>
+                  }
                 />
               </ListItem>
               <ListItem>
@@ -510,7 +589,11 @@ export function SalesLeadDetail() {
                 </ListItemIcon>
                 <ListItemText
                   primary={<Typography variant='body1' width={'50%'}>Created At</Typography>}
-                  secondary={<Typography variant='body1' color='text.primary' width={'50%'}>{formatDateTime(lead?.created_at ?? null)}</Typography>}
+                  secondary={
+                    <Typography variant='body1' color='text.primary' width={'50%'}>
+                      {formatDateTime(lead?.created_at ?? null)}
+                    </Typography>
+                  }
                 />
               </ListItem>
               <ListItem>
@@ -519,7 +602,11 @@ export function SalesLeadDetail() {
                 </ListItemIcon>
                 <ListItemText
                   primary={<Typography variant='body1' width={'50%'}>Last Updated</Typography>}
-                  secondary={<Typography variant='body1' color='text.primary' width={'50%'}>{formatDateTime(lead?.updated_at ?? null)}</Typography>}
+                  secondary={
+                    <Typography variant='body1' color='text.primary' width={'50%'}>
+                      {formatDateTime(lead?.updated_at ?? null)}
+                    </Typography>
+                  }
                 />
               </ListItem>
               <ListItem>
@@ -531,9 +618,7 @@ export function SalesLeadDetail() {
                   secondary={
                     <Typography variant='body1' color='text.primary' width={'50%'}>
                       {lead?.contact_email ? (
-                        <MuiLink href={`mailto:${lead.contact_email}`}>
-                          {lead.contact_email}
-                        </MuiLink>
+                        <MuiLink href={`mailto:${lead.contact_email}`}>{lead.contact_email}</MuiLink>
                       ) : (
                         '-'
                       )}
@@ -547,7 +632,63 @@ export function SalesLeadDetail() {
                 </ListItemIcon>
                 <ListItemText
                   primary={<Typography variant='body1' width={'50%'}>Phone</Typography>}
-                  secondary={<Typography variant='body1' color='text.primary' width={'50%'}>{formatUsPhoneNumber(lead?.phone_number ?? null)}</Typography>}
+                  secondary={
+                    <Typography variant='body1' color='text.primary' width={'50%'}>
+                      {formatUsPhoneNumber(lead?.phone_number ?? null)}
+                    </Typography>
+                  }
+                />
+              </ListItem>
+              <ListItem>
+                <ListItemIcon>
+                  <LocationOnOutlinedIcon />
+                </ListItemIcon>
+                <ListItemText
+                  primary={<Typography variant='body1' width={'50%'}>Address</Typography>}
+                  secondary={
+                    <Typography variant='body1' color='text.primary' width={'50%'}>
+                      {composeAddress(lead)}
+                    </Typography>
+                  }
+                />
+              </ListItem>
+              <ListItem>
+                <ListItemIcon>
+                  <PersonOutlineOutlinedIcon />
+                </ListItemIcon>
+                <ListItemText
+                  primary={<Typography variant='body1' width={'50%'}>Referrer</Typography>}
+                  secondary={
+                    <Typography variant='body1' color='text.primary' width={'50%'}>
+                      {lead?.referrer_name || '-'}
+                    </Typography>
+                  }
+                />
+              </ListItem>
+              <ListItem>
+                <ListItemIcon>
+                  <PhoneOutlinedIcon />
+                </ListItemIcon>
+                <ListItemText
+                  primary={<Typography variant='body1' width={'50%'}>Referrer Phone</Typography>}
+                  secondary={
+                    <Typography variant='body1' color='text.primary' width={'50%'}>
+                      {formatUsPhoneNumber(lead?.referrer_phone ?? null)}
+                    </Typography>
+                  }
+                />
+              </ListItem>
+              <ListItem>
+                <ListItemIcon>
+                  <AlternateEmailOutlinedIcon />
+                </ListItemIcon>
+                <ListItemText
+                  primary={<Typography variant='body1' width={'50%'}>Referrer Email</Typography>}
+                  secondary={
+                    <Typography variant='body1' color='text.primary' width={'50%'}>
+                      {lead?.referrer_email || '-'}
+                    </Typography>
+                  }
                 />
               </ListItem>
               <ListItem>
@@ -556,16 +697,11 @@ export function SalesLeadDetail() {
                 </ListItemIcon>
                 <ListItemText
                   primary={<Typography variant='body1' width={'50%'}>Interested Product</Typography>}
-                  secondary={<Typography variant='body1' color='text.primary' width={'50%'}>{lead?.interested_product || '-'}</Typography>}
-                />
-              </ListItem>
-              <ListItem>
-                <ListItemIcon>
-                  <LocationOnOutlinedIcon />
-                </ListItemIcon>
-                <ListItemText
-                  primary={<Typography variant='body1' width={'50%'}>Location</Typography>}
-                  secondary={<Typography variant='body1' color='text.primary' width={'50%'}>{lead?.location || '-'}</Typography>}
+                  secondary={
+                    <Typography variant='body1' color='text.primary' width={'50%'}>
+                      {lead?.interested_product || '-'}
+                    </Typography>
+                  }
                 />
               </ListItem>
               <ListItem>
@@ -574,7 +710,11 @@ export function SalesLeadDetail() {
                 </ListItemIcon>
                 <ListItemText
                   primary={<Typography variant='body1' width={'50%'}>Campaign</Typography>}
-                  secondary={<Typography variant='body1' color='text.primary' width={'50%'}>{lead?.source_campaign || '-'}</Typography>}
+                  secondary={
+                    <Typography variant='body1' color='text.primary' width={'50%'}>
+                      {lead?.source_campaign || '-'}
+                    </Typography>
+                  }
                 />
               </ListItem>
             </List>
@@ -619,12 +759,7 @@ export function SalesLeadDetail() {
           {followupsLoading ? (
             <Stack spacing={1.25}>
               {Array.from({ length: 3 }).map((_, index) => (
-                <Skeleton
-                  key={`followup-loading-${index}`}
-                  variant='rounded'
-                  animation='wave'
-                  height={30}
-                />
+                <Skeleton key={`followup-loading-${index}`} variant='rounded' animation='wave' height={30} />
               ))}
             </Stack>
           ) : (
@@ -645,34 +780,11 @@ export function SalesLeadDetail() {
           onClose={closeStatusMenu}
           anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
         >
-          <MenuItem onClick={() => void handleStatusChange('Unfollowed')}>
-            <Chip
-              size='small'
-              label={getStatusLabel('Unfollowed', isZh)}
-              color={statusColorMap.Unfollowed}
-            />
-          </MenuItem>
-          <MenuItem onClick={() => void handleStatusChange('Following Up')}>
-            <Chip
-              size='small'
-              label={getStatusLabel('Following Up', isZh)}
-              color={statusColorMap['Following Up']}
-            />
-          </MenuItem>
-          <MenuItem onClick={() => void handleStatusChange('Converted')}>
-            <Chip
-              size='small'
-              label={getStatusLabel('Converted', isZh)}
-              color={statusColorMap.Converted}
-            />
-          </MenuItem>
-          <MenuItem onClick={() => void handleStatusChange('Lost')}>
-            <Chip
-              size='small'
-              label={getStatusLabel('Lost', isZh)}
-              color={statusColorMap.Lost}
-            />
-          </MenuItem>
+          {LEAD_STATUS_OPTIONS.map((status) => (
+            <MenuItem key={status} onClick={() => void handleStatusChange(status)}>
+              <Chip size='small' label={getStatusLabel(status, isZh)} color={statusColorMap[status]} />
+            </MenuItem>
+          ))}
         </Menu>
         <Dialog
           open={addFollowupOpen}
@@ -697,17 +809,12 @@ export function SalesLeadDetail() {
               value={newFollowupNote}
               onChange={(event) => setNewFollowupNote(event.target.value)}
               placeholder={
-                isZh
-                  ? '输入本次跟进记录...'
-                  : 'Write the follow-up note for this lead...'
+                isZh ? '输入本次跟进记录...' : 'Write the follow-up note for this lead...'
               }
             />
           </DialogContent>
           <DialogActions>
-            <Button
-              onClick={() => setAddFollowupOpen(false)}
-              disabled={addingFollowup}
-            >
+            <Button onClick={() => setAddFollowupOpen(false)} disabled={addingFollowup}>
               {isZh ? '取消' : 'Cancel'}
             </Button>
             <Button

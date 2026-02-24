@@ -7,7 +7,7 @@ const MessagesTriggerButton = () => {
   const { headerTheme } = useJumboHeaderTheme();
   return (
     <ThemeProvider theme={headerTheme}>
-      <JumboIconButton badge={{ variant: 'dot' }} elevation={23}>
+      <JumboIconButton badge={{ variant: 'dot' }} elevation={23} disabled>
         <ChatBubbleOutlineOutlinedIcon sx={{ fontSize: '1rem' }} />
       </JumboIconButton>
     </ThemeProvider>

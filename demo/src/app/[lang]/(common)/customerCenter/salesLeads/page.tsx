@@ -569,6 +569,8 @@ export default function SalesLeadsManagementPage() {
               <Button
                 variant='contained'
                 startIcon={<ContactPhoneOutlinedIcon />}
+                component={Link}
+                href={`/${lang}/customerCenter/salesLeads/add`}
               >
                 {isZh ? '新增线索' : 'Add Lead'}
               </Button>

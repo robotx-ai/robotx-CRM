@@ -1,6 +1,4 @@
 'use client';
-import { MessagesPopover } from '@/components/MessagesPopover';
-import { NotificationsPopover } from '@/components/NotificationsPopover';
 import {
   useJumboLayout,
   useSidebarState,
@@ -43,8 +41,6 @@ function Header() {
         <ThemeModeOption />
         <TranslationPopover />
         <SearchIconButtonOnSmallScreen onClick={handleSearchVisibility} />
-        <MessagesPopover />
-        <NotificationsPopover />
         <AuthUserPopover />
       </Stack>
     </React.Fragment>
